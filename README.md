@@ -8,3 +8,6 @@
 
 <img src="assets/face_mixer.png" alt="image" width="400" height="auto">
 We propose a Triple Condition Diffusion Model (TCDiff) to improve face style transfer from real to synthetic faces through 2D and 3D facial constraints, enhancing face identity consistency while keeping the necessary high intra-class variance for training face recognition models with synthetic data.
+
+</br></br>
+### UNDER CONSTRUCTION
