@@ -1,0 +1,8 @@
+backbone: MICA
+dataset: null
+loss_fn: null
+normalize_feature: null
+return_spatial: null
+head_name: null
+ckpt_path: null
+center_path: null
