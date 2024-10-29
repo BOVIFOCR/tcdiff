@@ -1,5 +1,6 @@
 absl-py==1.1.0
-aiohttp==3.8.4
+# aiohttp==3.8.4
+aiohttp>=3.10.2
 aiosignal==1.3.1
 albumentations==1.2.0
 alembic==1.13.1
@@ -11,7 +12,8 @@ autopage==0.5.2
 Bottleneck==1.3.4
 brotlipy==0.7.0
 cachetools==5.2.0
-certifi==2022.12.7
+# certifi==2022.12.7
+certifi>=2024.07.04
 cffi==1.15.0
 cfgv==3.4.0
 charset-normalizer==2.0.4
@@ -27,7 +29,8 @@ colorlog==6.8.2
 conda-package-handling==2.2.0
 conda_package_streaming==0.9.0
 contourpy==1.0.7
-cryptography==36.0.0
+# cryptography==36.0.0
+cryptography>=42.0.2
 cycler==0.10.0
 Cython==0.29.28
 cytoolz==0.11.0
@@ -41,7 +44,8 @@ exceptiongroup==1.2.1
 faiss==1.7.3
 filelock==3.14.0
 flatbuffers==2.0
-fonttools==4.38.0
+# fonttools==4.38.0
+fonttools>=4.43.0
 frozenlist==1.3.3
 fsspec==2024.5.0
 ftfy==6.2.0
@@ -54,7 +58,8 @@ google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 graphviz==0.8.4
 greenlet==3.0.3
-grpcio==1.47.0
+# grpcio==1.47.0
+grpcio>=1.53.2
 h5py==3.8.0
 huggingface-hub==0.22.2
 humanfriendly==10.0
@@ -70,7 +75,8 @@ iniconfig==2.0.0
 insightface==0.6.2
 iopath==0.1.9
 joblib==1.2.0
-keras==2.11.0
+# keras==2.11.0
+keras>=2.13.1rc0
 kiwisolver==1.2.0
 libclang==15.0.6.1
 lightning-utilities==0.8.0
@@ -86,7 +92,8 @@ mdurl==0.1.2
 mkl-fft==1.3.1
 mkl-random==1.2.2
 mkl-service==2.4.0
-mpmath==1.2.1
+# mpmath==1.2.1
+mpmath>=1.3.0
 multidict==6.0.4
 mxnet==1.9.1
 networkx==2.5
@@ -95,17 +102,21 @@ numexpr==2.8.5
 numpy==1.24.2
 oauthlib==3.2.0
 omegaconf==2.3.0
-onnx==1.12.0
+# onnx==1.12.0
+onnx>=1.17.0
 onnxruntime==1.11.0
 onnxruntime-gpu==1.13.1
-opencv-python==4.7.0.68
-opencv-python-headless==4.6.0.66
+# opencv-python==4.7.0.68
+opencv-python>=4.8.1.78
+# opencv-python-headless==4.6.0.66
+opencv-python-headless>=4.8.1.78
 opt-einsum==3.3.0
 optuna==2.10.1
 packaging==21.3
 pandas==2.0.0
 pbr==6.0.0
-Pillow==9.4.0
+# Pillow==9.4.0
+Pillow>=10.3.0
 pip==22.3.1
 platformdirs==4.2.2
 plot-model==0.20
@@ -151,7 +162,8 @@ scipy==1.10.0
 seaborn==0.12.2
 sentry-sdk==2.3.1
 setproctitle==1.3.3
-setuptools==67.3.2
+# setuptools==67.3.2
+setuptools>=70.0.0
 six==1.16.0
 smmap==5.0.1
 SQLAlchemy==2.0.30
@@ -161,7 +173,8 @@ tabulate==0.8.9
 tensorboard==2.11.2
 tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.1
-tensorflow==2.11.0
+# tensorflow==2.11.0
+tensorflow>=2.12.1
 tensorflow-estimator==2.11.0
 tensorflow-io-gcs-filesystem==0.31.0
 termcolor==1.1.0
@@ -169,7 +182,8 @@ threadpoolctl==3.1.0
 tifffile==2020.10.1
 tomli==2.0.1
 toolz==0.11.1
-torch==1.11.0
+# torch==1.11.0
+torch>=2.2.0
 torchaudio==0.11.0
 torchmetrics==0.9.3
 torchvision==0.12.0
@@ -184,7 +198,8 @@ urllib3==1.26.18
 virtualenv==20.26.2
 wandb==0.17.0
 wcwidth==0.2.13
-Werkzeug==1.0.1
+# Werkzeug==1.0.1
+Werkzeug>=3.0.6
 wheel==0.37.1
 wrapt==1.15.0
 yacs==0.1.8
