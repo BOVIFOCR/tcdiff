@@ -1,16 +1,16 @@
-# Copyright 2022 NVIDIA and The HuggingFace Team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 from dataclasses import dataclass
@@ -27,7 +27,7 @@ from .scheduling_utils import SchedulerMixin
 
 @flax.struct.dataclass
 class KarrasVeSchedulerState:
-    # setable values
+
     num_inference_steps: Optional[int] = None
     timesteps: Optional[jnp.ndarray] = None
     schedule: Optional[jnp.ndarray] = None  # sigma(t_i)
@@ -143,7 +143,7 @@ class FlaxKarrasVeScheduler(SchedulerMixin, ConfigMixin):
         else:
             gamma = 0
 
-        # sample eps ~ N(0, S_noise^2 * I)
+
         key = random.split(key, num=1)
         eps = self.config.s_noise * random.normal(key=key, shape=sample.shape)
         sigma_hat = sigma + gamma * sigma

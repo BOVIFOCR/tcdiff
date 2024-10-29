@@ -124,7 +124,7 @@ def mix_hidden_states(encoder_hidden_states, mixing_hidden_states, condition_typ
             mixed = torch.cat([mixed_label, source_spatial], dim=1)
         elif mixing_method == 'label_extrapolate_random_channel':
             if source_alpha is None:
-                # between 1 and 8-1(7)
+
                 source_num_channel = np.random.randint(1, num_label_features)
             elif isinstance(source_alpha, int):
                 source_num_channel = int(source_alpha)

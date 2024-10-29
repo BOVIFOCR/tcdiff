@@ -101,7 +101,7 @@ class LDMTextToImagePipeline(DiffusionPipeline):
                 " Consider using `pipe.to(torch_device)` instead."
             )
 
-            # Set device as before (to be removed in 0.3.0)
+
             if device is None:
                 device = "cuda" if torch.cuda.is_available() else "cpu"
             self.to(device)
@@ -116,12 +116,12 @@ class LDMTextToImagePipeline(DiffusionPipeline):
         if height % 8 != 0 or width % 8 != 0:
             raise ValueError(f"`height` and `width` have to be divisible by 8 but are {height} and {width}.")
 
-        # get unconditional embeddings for classifier free guidance
+
         if guidance_scale != 1.0:
             uncond_input = self.tokenizer([""] * batch_size, padding="max_length", max_length=77, return_tensors="pt")
             uncond_embeddings = self.bert(uncond_input.input_ids.to(self.device))[0]
 
-        # get prompt text embeddings
+
         text_input = self.tokenizer(prompt, padding="max_length", max_length=77, return_tensors="pt")
         text_embeddings = self.bert(text_input.input_ids.to(self.device))[0]
 
@@ -133,7 +133,7 @@ class LDMTextToImagePipeline(DiffusionPipeline):
 
         self.scheduler.set_timesteps(num_inference_steps)
 
-        # prepare extra kwargs for the scheduler step, since not all schedulers have the same signature
+
         accepts_eta = "eta" in set(inspect.signature(self.scheduler.step).parameters.keys())
 
         extra_kwargs = {}
@@ -142,27 +142,27 @@ class LDMTextToImagePipeline(DiffusionPipeline):
 
         for t in self.progress_bar(self.scheduler.timesteps):
             if guidance_scale == 1.0:
-                # guidance_scale of 1 means no guidance
+
                 latents_input = latents
                 context = text_embeddings
             else:
-                # For classifier free guidance, we need to do two forward passes.
-                # Here we concatenate the unconditional and text embeddings into a single batch
-                # to avoid doing two forward passes
+
+
+
                 latents_input = torch.cat([latents] * 2)
                 context = torch.cat([uncond_embeddings, text_embeddings])
 
-            # predict the noise residual
+
             noise_pred = self.unet(latents_input, t, encoder_hidden_states=context).sample
-            # perform guidance
+
             if guidance_scale != 1.0:
                 noise_pred_uncond, noise_prediction_text = noise_pred.chunk(2)
                 noise_pred = noise_pred_uncond + guidance_scale * (noise_prediction_text - noise_pred_uncond)
 
-            # compute the previous noisy sample x_t -> x_t-1
+
             latents = self.scheduler.step(noise_pred, t, latents, **extra_kwargs).prev_sample
 
-        # scale and decode the image latents with vae
+
         latents = 1 / 0.18215 * latents
         image = self.vqvae.decode(latents).sample
 
@@ -177,9 +177,9 @@ class LDMTextToImagePipeline(DiffusionPipeline):
         return ImagePipelineOutput(images=image)
 
 
-################################################################################
-# Code for the text transformer model
-################################################################################
+
+
+
 """ PyTorch LDMBERT model."""
 
 
@@ -187,7 +187,7 @@ logger = logging.get_logger(__name__)
 
 LDMBERT_PRETRAINED_MODEL_ARCHIVE_LIST = [
     "ldm-bert",
-    # See all LDMBert models at https://huggingface.co/models?filter=ldmbert
+
 ]
 
 
@@ -260,7 +260,7 @@ def _expand_mask(mask: torch.Tensor, dtype: torch.dtype, tgt_len: Optional[int] 
     return inverted_mask.masked_fill(inverted_mask.to(torch.bool), torch.finfo(dtype).min)
 
 
-# Copied from transformers.models.bart.modeling_bart.BartAttention with Bart->LDMBert
+
 class LDMBertAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -302,42 +302,42 @@ class LDMBertAttention(nn.Module):
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         """Input shape: Batch x Time x Channel"""
 
-        # if key_value_states are provided this layer is used as a cross-attention layer
-        # for the decoder
+
+
         is_cross_attention = key_value_states is not None
 
         bsz, tgt_len, _ = hidden_states.size()
 
-        # get query proj
+
         query_states = self.q_proj(hidden_states) * self.scaling
-        # get key, value proj
+
         if is_cross_attention and past_key_value is not None:
-            # reuse k,v, cross_attentions
+
             key_states = past_key_value[0]
             value_states = past_key_value[1]
         elif is_cross_attention:
-            # cross_attentions
+
             key_states = self._shape(self.k_proj(key_value_states), -1, bsz)
             value_states = self._shape(self.v_proj(key_value_states), -1, bsz)
         elif past_key_value is not None:
-            # reuse k, v, self_attention
+
             key_states = self._shape(self.k_proj(hidden_states), -1, bsz)
             value_states = self._shape(self.v_proj(hidden_states), -1, bsz)
             key_states = torch.cat([past_key_value[0], key_states], dim=2)
             value_states = torch.cat([past_key_value[1], value_states], dim=2)
         else:
-            # self_attention
+
             key_states = self._shape(self.k_proj(hidden_states), -1, bsz)
             value_states = self._shape(self.v_proj(hidden_states), -1, bsz)
 
         if self.is_decoder:
-            # if cross_attention save Tuple(torch.Tensor, torch.Tensor) of all cross attention key/value_states.
-            # Further calls to cross_attention layer can then reuse all cross-attention
-            # key/value_states (first "if" case)
-            # if uni-directional self-attention (decoder) save Tuple(torch.Tensor, torch.Tensor) of
-            # all previous decoder key/value_states. Further calls to uni-directional self-attention
-            # can concat previous decoder key/value_states to current projected key/value_states (third "elif" case)
-            # if encoder bi-directional self-attention `past_key_value` is always `None`
+
+
+
+
+
+
+
             past_key_value = (key_states, value_states)
 
         proj_shape = (bsz * self.num_heads, -1, self.head_dim)
@@ -374,10 +374,10 @@ class LDMBertAttention(nn.Module):
             attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len, src_len)
 
         if output_attentions:
-            # this operation is a bit awkward, but it's required to
-            # make sure that attn_weights keeps its gradient.
-            # In order to do so, attn_weights have to be reshaped
-            # twice and have to be reused in the following
+
+
+
+
             attn_weights_reshaped = attn_weights.view(bsz, self.num_heads, tgt_len, src_len)
             attn_weights = attn_weights_reshaped.view(bsz * self.num_heads, tgt_len, src_len)
         else:
@@ -396,8 +396,8 @@ class LDMBertAttention(nn.Module):
         attn_output = attn_output.view(bsz, self.num_heads, tgt_len, self.head_dim)
         attn_output = attn_output.transpose(1, 2)
 
-        # Use the `embed_dim` from the config (stored in the class) rather than `hidden_state` because `attn_output` can be
-        # partitioned across GPUs when using tensor-parallelism.
+
+
         attn_output = attn_output.reshape(bsz, tgt_len, self.inner_dim)
 
         attn_output = self.out_proj(attn_output)
@@ -474,7 +474,7 @@ class LDMBertEncoderLayer(nn.Module):
         return outputs
 
 
-# Copied from transformers.models.bart.modeling_bart.BartPretrainedModel with Bart->LDMBert
+
 class LDMBertPreTrainedModel(PreTrainedModel):
     config_class = LDMBertConfig
     base_model_prefix = "model"
@@ -532,7 +532,7 @@ class LDMBertEncoder(LDMBertPreTrainedModel):
         self.layer_norm = nn.LayerNorm(embed_dim)
 
         self.gradient_checkpointing = False
-        # Initialize weights and apply final processing
+
         self.post_init()
 
     def get_input_embeddings(self):
@@ -594,7 +594,7 @@ class LDMBertEncoder(LDMBertPreTrainedModel):
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        # retrieve input_ids and inputs_embeds
+
         if input_ids is not None and inputs_embeds is not None:
             raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
         elif input_ids is not None:
@@ -616,15 +616,15 @@ class LDMBertEncoder(LDMBertPreTrainedModel):
         hidden_states = inputs_embeds + embed_pos
         hidden_states = nn.functional.dropout(hidden_states, p=self.dropout, training=self.training)
 
-        # expand attention_mask
+
         if attention_mask is not None:
-            # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
+
             attention_mask = _expand_mask(attention_mask, inputs_embeds.dtype)
 
         encoder_states = () if output_hidden_states else None
         all_attentions = () if output_attentions else None
 
-        # check if head_mask has a correct number of layers specified if desired
+
         if head_mask is not None:
             if head_mask.size()[0] != (len(self.layers)):
                 raise ValueError(

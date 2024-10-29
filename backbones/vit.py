@@ -43,7 +43,7 @@ class Attention(nn.Module):
         super().__init__()
         self.num_heads = num_heads
         head_dim = dim // num_heads
-        # NOTE scale factor was wrong in my original version, can set manually to be compat with prev weights
+
         self.scale = qk_scale or head_dim ** -0.5
 
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
@@ -55,7 +55,7 @@ class Attention(nn.Module):
         
         with torch.cuda.amp.autocast(True):
             batch_size, num_token, embed_dim = x.shape
-            #qkv is [3,batch_size,num_heads,num_token, embed_dim//num_heads]
+
             qkv = self.qkv(x).reshape(
                 batch_size, num_token, 3, self.num_heads, embed_dim // self.num_heads).permute(2, 0, 3, 1, 4)
         with torch.cuda.amp.autocast(False):
@@ -96,7 +96,7 @@ class Block(nn.Module):
 
         self.attn = Attention(
             dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
-        # NOTE: drop path for stochastic depth, we shall see if this is better than dropout here
+
         self.drop_path = DropPath(
             drop_path) if drop_path > 0. else nn.Identity()
         mlp_hidden_dim = int(dim * mlp_ratio)
@@ -157,7 +157,7 @@ class VisionTransformer(nn.Module):
                  ):
         super().__init__()
         self.num_classes = num_classes
-        # num_features for consistency with other models
+
         self.num_features = self.embed_dim = embed_dim
 
         if hybrid_backbone is not None:
@@ -172,7 +172,7 @@ class VisionTransformer(nn.Module):
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, embed_dim))
         self.pos_drop = nn.Dropout(p=drop_rate)
 
-        # stochastic depth decay rule
+
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]
         patch_n = (img_size//patch_size)**2
         self.blocks = nn.ModuleList(
@@ -191,7 +191,7 @@ class VisionTransformer(nn.Module):
         elif norm_layer == "bn":
             self.norm = VITBatchNorm(self.num_patches)
 
-        # features head
+
         self.feature = nn.Sequential(
             nn.Linear(in_features=embed_dim * num_patches, out_features=embed_dim, bias=False),
             nn.BatchNorm1d(num_features=embed_dim, eps=2e-5),
@@ -202,7 +202,7 @@ class VisionTransformer(nn.Module):
         self.mask_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         torch.nn.init.normal_(self.mask_token, std=.02)
         trunc_normal_(self.pos_embed, std=.02)
-        # trunc_normal_(self.cls_token, std=.02)
+
         self.apply(self._init_weights)
 
     def _init_weights(self, m):
@@ -232,20 +232,20 @@ class VisionTransformer(nn.Module):
 
         noise = torch.rand(N, L, device=x.device)  # noise in [0, 1]
 
-        # sort noise for each sample
-        # ascend: small is keep, large is remove
+
+
         ids_shuffle = torch.argsort(noise, dim=1)
         ids_restore = torch.argsort(ids_shuffle, dim=1)
 
-        # keep the first subset
+
         ids_keep = ids_shuffle[:, :len_keep]
         x_masked = torch.gather(
             x, dim=1, index=ids_keep.unsqueeze(-1).repeat(1, 1, D))
 
-        # generate the binary mask: 0 is keep, 1 is remove
+
         mask = torch.ones([N, L], device=x.device)
         mask[:, :len_keep] = 0
-        # unshuffle to get the binary mask
+
         mask = torch.gather(mask, dim=1, index=ids_restore)
 
         return x_masked, mask, ids_restore

@@ -1,18 +1,18 @@
-# coding=utf-8
-# Copyright 2022 The HuggingFace Inc. team.
-# Copyright (c) 2022, NVIDIA CORPORATION.  All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 """ ConfigMixinuration base class and utilities."""
 import dataclasses
 import functools
@@ -88,7 +88,7 @@ class ConfigMixin:
 
         os.makedirs(save_directory, exist_ok=True)
 
-        # If we save using the predefined names, we can load using `from_config`
+
         output_config_file = os.path.join(save_directory, self.config_name)
 
         self.to_json_file(output_config_file)
@@ -156,15 +156,15 @@ class ConfigMixin:
         config_dict = cls.get_config_dict(pretrained_model_name_or_path=pretrained_model_name_or_path, **kwargs)
         init_dict, unused_kwargs = cls.extract_init_dict(config_dict, **kwargs)
 
-        # Allow dtype to be specified on initialization
+
         if "dtype" in unused_kwargs:
             init_dict["dtype"] = unused_kwargs.pop("dtype")
 
-        # Return model and optionally state and/or unused_kwargs
+
         model = cls(**init_dict)
         return_tuple = (model,)
 
-        # Flax schedulers have a state, so return it.
+
         if cls.__name__.startswith("Flax") and hasattr(model, "create_state") and getattr(model, "has_state", False):
             state = model.create_state()
             return_tuple += (state,)
@@ -202,7 +202,7 @@ class ConfigMixin:
             config_file = pretrained_model_name_or_path
         elif os.path.isdir(pretrained_model_name_or_path):
             if os.path.isfile(os.path.join(pretrained_model_name_or_path, cls.config_name)):
-                # Load from a PyTorch checkpoint
+
                 config_file = os.path.join(pretrained_model_name_or_path, cls.config_name)
             elif subfolder is not None and os.path.isfile(
                 os.path.join(pretrained_model_name_or_path, subfolder, cls.config_name)
@@ -214,7 +214,7 @@ class ConfigMixin:
                 )
         else:
             try:
-                # Load from URL or cache if already cached
+
                 config_file = hf_hub_download(
                     pretrained_model_name_or_path,
                     filename=cls.config_name,
@@ -268,7 +268,7 @@ class ConfigMixin:
                 )
 
         try:
-            # Load config dict
+
             config_dict = cls._dict_from_json_file(config_file)
         except (json.JSONDecodeError, UnicodeDecodeError):
             raise EnvironmentError(f"It looks like the config file at '{config_file}' is not a valid JSON file.")
@@ -279,24 +279,24 @@ class ConfigMixin:
     def extract_init_dict(cls, config_dict, **kwargs):
         expected_keys = set(dict(inspect.signature(cls.__init__).parameters).keys())
         expected_keys.remove("self")
-        # remove general kwargs if present in dict
+
         if "kwargs" in expected_keys:
             expected_keys.remove("kwargs")
-        # remove flax internal keys
+
         if hasattr(cls, "_flax_internal_args"):
             for arg in cls._flax_internal_args:
                 expected_keys.remove(arg)
 
-        # remove keys to be ignored
+
         if len(cls.ignore_for_config) > 0:
             expected_keys = expected_keys - set(cls.ignore_for_config)
         init_dict = {}
         for key in expected_keys:
             if key in kwargs:
-                # overwrite key
+
                 init_dict[key] = kwargs.pop(key)
             elif key in config_dict:
-                # use value from config dict
+
                 init_dict[key] = config_dict.pop(key)
 
         config_dict = {k: v for k, v in config_dict.items() if not k.startswith("_")}
@@ -396,7 +396,7 @@ def register_to_config(init):
 
     @functools.wraps(init)
     def inner_init(self, *args, **kwargs):
-        # Ignore private kwargs in the init.
+
         init_kwargs = {k: v for k, v in kwargs.items() if not k.startswith("_")}
         init(self, *args, **init_kwargs)
         if not isinstance(self, ConfigMixin):
@@ -406,7 +406,7 @@ def register_to_config(init):
             )
 
         ignore = getattr(self, "ignore_for_config", [])
-        # Get positional arguments aligned with kwargs
+
         new_kwargs = {}
         signature = inspect.signature(init)
         parameters = {
@@ -415,7 +415,7 @@ def register_to_config(init):
         for arg, name in zip(args, parameters.keys()):
             new_kwargs[name] = arg
 
-        # Then add all kwargs
+
         new_kwargs.update(
             {
                 k: init_kwargs.get(k, default)
@@ -439,14 +439,14 @@ def flax_register_to_config(cls):
                 "not inherit from `ConfigMixin`."
             )
 
-        # Ignore private kwargs in the init. Retrieve all passed attributes
+
         init_kwargs = {k: v for k, v in kwargs.items() if not k.startswith("_")}
 
-        # Retrieve default values
+
         fields = dataclasses.fields(self)
         default_kwargs = {}
         for field in fields:
-            # ignore flax specific attributes
+
             if field.name in self._flax_internal_args:
                 continue
             if type(field.default) == dataclasses._MISSING_TYPE:
@@ -454,13 +454,13 @@ def flax_register_to_config(cls):
             else:
                 default_kwargs[field.name] = getattr(self, field.name)
 
-        # Make sure init_kwargs override default kwargs
+
         new_kwargs = {**default_kwargs, **init_kwargs}
-        # dtype should be part of `init_kwargs`, but not `new_kwargs`
+
         if "dtype" in new_kwargs:
             new_kwargs.pop("dtype")
 
-        # Get positional arguments aligned with kwargs
+
         for i, arg in enumerate(args):
             name = fields[i].name
             new_kwargs[name] = arg

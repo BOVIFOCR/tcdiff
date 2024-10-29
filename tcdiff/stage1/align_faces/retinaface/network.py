@@ -92,10 +92,10 @@ class RetinaFace(nn.Module):
     def forward(self, inputs: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         out = self.body(inputs)
 
-        # FPN
+
         fpn = self.fpn(out)
 
-        # SSH
+
         feature1 = self.ssh1(fpn[0])
         feature2 = self.ssh2(fpn[1])
         feature3 = self.ssh3(fpn[2])

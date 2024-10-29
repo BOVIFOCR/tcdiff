@@ -65,17 +65,17 @@ class ImageLogger(Callback):
         batch = sample_visual.sample_images_for_vis(dataset,
                                                     self.num_custom1_visual_subjects,
                                                     self.num_custom1_visual_images_per_subject)
-        # eval_batch_size = pl_module.hparams['datamodule'].keywords['batch_size_eval']
-        # batch, eval_batch_size = limit_data_batchsize(batch, eval_batch_size)
 
-        # DDPM DDIM Sampling
+
+
+
         if pl_module.global_rank == 0:
-            # print('DDPM Generating Images')
-            # images = sample_visual.render_condition(batch, pl_module=pl_module, sampler='ddpm',
-            #                                         between_zero_and_one=True, show_progress=False)
-            # grid = torchvision.utils.make_grid(torch.tensor(images.transpose(0, 3, 1, 2)), nrow=4)
-            # pl_module.logger.experiment.log({f'{stage}_samples/ddpm_samples': wandb.Image(grid),
-            #                                  'epoch': pl_module.current_epoch}, current_step)
+
+
+
+
+
+
 
             print('DDIM Generating Images')
             images = sample_visual.render_condition(batch, pl_module=pl_module, sampler='ddim',

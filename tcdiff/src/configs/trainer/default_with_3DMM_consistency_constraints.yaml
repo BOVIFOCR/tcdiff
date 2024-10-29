@@ -1,9 +1,8 @@
-# _target_: src.trainer.Trainer                                                                  # original
-_target_: src.trainer_with_3DMM_consistency_constraints.TrainerWith3DMMConsistencyConstraints    # Bernardo
+_target_: src.trainer_with_3DMM_consistency_constraints.TrainerWith3DMMConsistencyConstraints
 _partial_: true
 image_size: 32
 channels: 3
-ckpt_path: ${oc.env:REPO_ROOT}/dcface/pretrained_models/ffhq_10m_ft.pt
+ckpt_path: ${oc.env:REPO_ROOT}/tcdiff/pretrained_models/ffhq_10m_ft.pt
 use_ema: True
 sampler:
   num_train_timesteps: 1000

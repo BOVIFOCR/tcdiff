@@ -12,7 +12,7 @@ def make_label_mapping(config, unet_config):
     elif config.version == 'v4':
         assert unet_config['params'].condition_type in ['cross_attn', 'crossatt_and_stylemod']
         assert unet_config['params'].condition_source in ['patchstat_spatial_and_image', 'image_and_patchstat_spatial']
-        # image condition
+
         config.recognition_config = copy.copy(config.recognition_config)
         config.recognition_config['ckpt_path'] = None
         config.recognition_config['center_path'] = None

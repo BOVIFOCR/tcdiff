@@ -1,0 +1,6 @@
+Cython==0.29.21
+insightface==0.6.2
+onnxruntime==1.13.1
+loguru==0.6.0
+yacs==0.1.8
+

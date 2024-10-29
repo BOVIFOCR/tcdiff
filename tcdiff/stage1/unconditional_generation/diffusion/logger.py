@@ -46,7 +46,7 @@ class HumanOutputFormat(KVWriter, SeqWriter):
             self.own_file = False
 
     def writekvs(self, kvs):
-        # Create strings for printing
+
         key2str = {}
         for (key, val) in sorted(kvs.items()):
             if hasattr(val, "__float__"):
@@ -55,7 +55,7 @@ class HumanOutputFormat(KVWriter, SeqWriter):
                 valstr = str(val)
             key2str[self._truncate(key)] = self._truncate(valstr)
 
-        # Find max widths
+
         if len(key2str) == 0:
             print("WARNING: tried to write empty key-value dict")
             return
@@ -63,7 +63,7 @@ class HumanOutputFormat(KVWriter, SeqWriter):
             keywidth = max(map(len, key2str.keys()))
             valwidth = max(map(len, key2str.values()))
 
-        # Write out the data
+
         dashes = "-" * (keywidth + valwidth + 7)
         lines = [dashes]
         for (key, val) in sorted(key2str.items(), key=lambda kv: kv[0].lower()):
@@ -74,7 +74,7 @@ class HumanOutputFormat(KVWriter, SeqWriter):
         lines.append(dashes)
         self.file.write("\n".join(lines) + "\n")
 
-        # Flush the output to the file
+
         self.file.flush()
 
     def _truncate(self, s):
@@ -117,7 +117,7 @@ class CSVOutputFormat(KVWriter):
         self.sep = ","
 
     def writekvs(self, kvs):
-        # Add our current row to the history
+
         extra_keys = list(kvs.keys() - self.keys)
         extra_keys.sort()
         if extra_keys:
@@ -204,9 +204,9 @@ def make_output_format(format, ev_dir, log_suffix=""):
         raise ValueError("Unknown format specified: %s" % (format,))
 
 
-# ================================================================
-# API
-# ================================================================
+
+
+
 
 
 def logkv(key, val):
@@ -317,9 +317,9 @@ def profile(n):
     return decorator_with_name
 
 
-# ================================================================
-# Backend
-# ================================================================
+
+
+
 
 
 def get_current():
@@ -331,7 +331,7 @@ def get_current():
 
 class Logger(object):
     DEFAULT = None  # A logger with no output files. (See right below class definition)
-    # So that you can still log to the terminal without setting up any output files
+
     CURRENT = None  # Current logger being used by the free functions above
 
     def __init__(self, dir, output_formats, comm=None):
@@ -342,8 +342,8 @@ class Logger(object):
         self.output_formats = output_formats
         self.comm = comm
 
-    # Logging API, forwarded
-    # ----------------------------------------
+
+
     def logkv(self, key, val):
         self.name2val[key] = val
 
@@ -377,8 +377,8 @@ class Logger(object):
         if self.level <= level:
             self._do_log(args)
 
-    # Configuration
-    # ----------------------------------------
+
+
     def set_level(self, level):
         self.level = level
 
@@ -392,8 +392,8 @@ class Logger(object):
         for fmt in self.output_formats:
             fmt.close()
 
-    # Misc
-    # ----------------------------------------
+
+
     def _do_log(self, args):
         for fmt in self.output_formats:
             if isinstance(fmt, SeqWriter):
@@ -401,8 +401,8 @@ class Logger(object):
 
 
 def get_rank_without_mpi_import():
-    # check environment variables here instead of importing mpi4py
-    # to avoid calling MPI_Init() when this module is imported
+
+
     for varname in ["PMI_RANK", "OMPI_COMM_WORLD_RANK"]:
         if varname in os.environ:
             return int(os.environ[varname])

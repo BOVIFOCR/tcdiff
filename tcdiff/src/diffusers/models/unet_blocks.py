@@ -1,19 +1,19 @@
-# Copyright 2022 The HuggingFace Team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
+
+
+
+
+
+
+
+
+
+
+
+
 
 import numpy as np
 
-# limitations under the License.
+
 import torch
 from torch import nn
 
@@ -288,7 +288,7 @@ class UNetMidBlock2D(nn.Module):
         self.attention_type = attention_type
         resnet_groups = resnet_groups if resnet_groups is not None else min(in_channels // 4, 32)
 
-        # there is always at least one resnet
+
         resnets = [
             ResnetBlock2D(
                 in_channels=in_channels,
@@ -369,7 +369,7 @@ class UNetMidBlock2DCrossAttn(nn.Module):
         self.attn_num_head_channels = attn_num_head_channels
         resnet_groups = resnet_groups if resnet_groups is not None else min(in_channels // 4, 32)
 
-        # there is always at least one resnet
+
         resnets = [
             ResnetBlock2D(
                 in_channels=in_channels,
@@ -1086,7 +1086,7 @@ class AttnUpBlock2D(nn.Module):
 
     def forward(self, hidden_states, res_hidden_states_tuple, temb=None):
         for resnet, attn in zip(self.resnets, self.attentions):
-            # pop res hidden states
+
             res_hidden_states = res_hidden_states_tuple[-1]
             res_hidden_states_tuple = res_hidden_states_tuple[:-1]
             hidden_states = torch.cat([hidden_states, res_hidden_states], dim=1)
@@ -1192,7 +1192,7 @@ class CrossAttnUpBlock2D(nn.Module):
         encoder_hidden_states=None,
     ):
         for resnet, attn in zip(self.resnets, self.attentions):
-            # pop res hidden states
+
             res_hidden_states = res_hidden_states_tuple[-1]
             res_hidden_states_tuple = res_hidden_states_tuple[:-1]
             hidden_states = torch.cat([hidden_states, res_hidden_states], dim=1)
@@ -1274,7 +1274,7 @@ class UpBlock2D(nn.Module):
 
     def forward(self, hidden_states, res_hidden_states_tuple, temb=None):
         for resnet in self.resnets:
-            # pop res hidden states
+
             res_hidden_states = res_hidden_states_tuple[-1]
             res_hidden_states_tuple = res_hidden_states_tuple[:-1]
             hidden_states = torch.cat([hidden_states, res_hidden_states], dim=1)
@@ -1504,7 +1504,7 @@ class AttnSkipUpBlock2D(nn.Module):
 
     def forward(self, hidden_states, res_hidden_states_tuple, temb=None, skip_sample=None):
         for resnet in self.resnets:
-            # pop res hidden states
+
             res_hidden_states = res_hidden_states_tuple[-1]
             res_hidden_states_tuple = res_hidden_states_tuple[:-1]
             hidden_states = torch.cat([hidden_states, res_hidden_states], dim=1)
@@ -1601,7 +1601,7 @@ class SkipUpBlock2D(nn.Module):
 
     def forward(self, hidden_states, res_hidden_states_tuple, temb=None, skip_sample=None):
         for resnet in self.resnets:
-            # pop res hidden states
+
             res_hidden_states = res_hidden_states_tuple[-1]
             res_hidden_states_tuple = res_hidden_states_tuple[:-1]
             hidden_states = torch.cat([hidden_states, res_hidden_states], dim=1)

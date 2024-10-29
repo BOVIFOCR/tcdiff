@@ -35,7 +35,7 @@ def read_list(path_in):
                 break
             line = [i.strip() for i in line.strip().split('\t')]
             line_len = len(line)
-            # check the data format of .lst file
+
             assert line_len == 3
             item = {'idx': int(line[0]), "path": line[2], 'label': float(line[1])}
             yield item
@@ -52,8 +52,8 @@ class BaseMXDataset(Dataset):
 
         self.record = mx.recordio.MXIndexedRecordIO(path_imgidx, path_imgrec, 'r')
 
-        # grad image index from the record and know how many images there are.
-        # image index could be occasionally random order. like [4,3,1,2,0]
+
+
         s = self.record.read_idx(0)
         header, _ = mx.recordio.unpack(s)
         if header.flag > 0:
@@ -73,7 +73,7 @@ class BaseMXDataset(Dataset):
             self.insightface_trainrec = False
         else:
             self.insightface_trainrec = True
-            # make one yourself
+
             record_info = []
             for idx in self.imgidx:
                 s = self.record.read_idx(idx)
@@ -102,7 +102,7 @@ class BaseMXDataset(Dataset):
             sample = cv2.resize(sample, (self.resolution, self.resolution))
 
         if self.swap_color_order:
-            # swap rgb to bgr since image is in rgb for webface
+
             sample = Image.fromarray(np.asarray(sample)[:, :, ::-1])
         else:
             assert not 'webface4m' in self.root_dir.lower()
@@ -114,7 +114,7 @@ class BaseMXDataset(Dataset):
         raise NotImplementedError()
 
     def __len__(self):
-        # return len(self.imgidx)
+
         raise NotImplementedError()
 
 
@@ -126,27 +126,27 @@ class LabelConvertedMXFaceDataset(BaseMXDataset):
                  rec_label_to_another_label=None,
                  resolution=112
                  ):
-        # rec_label_to_another_label: dictionary converting record label to another label like torch ImageFolderLabel
+
         super(LabelConvertedMXFaceDataset, self).__init__(root_dir=root_dir,
                                                           swap_color_order=swap_color_order,
                                                           resolution=resolution)
         if rec_label_to_another_label is None:
-            # make one using path
-            # image folder with 0/1.jpg
 
-            # from record file label to folder name
+
+
+
             rec_label = self.record_info.label.tolist()
             foldernames = self.record_info.path.apply(lambda x: x.split('/')[0]).tolist()
             self.rec_to_folder = {}
             for i, j in zip(rec_label, foldernames):
                 self.rec_to_folder[i] = j
 
-            # from folder name to number as torch imagefolder
+
             foldernames = sorted(str(entry) for entry in self.rec_to_folder.values())
             self.folder_to_num = {cls_name: i for i, cls_name in enumerate(foldernames)}
             self.rec_label_to_another_label = {}
 
-            # combine all
+
             for x in rec_label:
                 self.rec_label_to_another_label[x] = self.folder_to_num[self.rec_to_folder[x]]
 
@@ -185,7 +185,7 @@ class FaceMXDataset(LabelConvertedMXFaceDataset):
                                             rec_label_to_another_label=rec_label_to_another_label,
                                             resolution=resolution)
         if isinstance(transform, list):
-            # split transform for returning both 112x112 and 128x128
+
             transform_random1, transform_random2, transform_determ1, transform_determ2 = transform
             self.transform_random1 = transform_random1
             self.transform_random2 = transform_random2
@@ -259,7 +259,7 @@ class FaceMXDataset(LabelConvertedMXFaceDataset):
                 sample = self.transform_random1(sample)
             sample1 = self.transform_determ1(sample)
 
-            # sample2 is usually original shape
+
             if self.deterministic:
                 sample2 = sample
             else:
@@ -285,7 +285,7 @@ class FaceMXDataset(LabelConvertedMXFaceDataset):
             is_inlier = cossim_to_center > outlier_threshold
             is_inlier = is_inlier.sample(1).item()
             if not is_inlier:
-                # resample
+
                 index = target_df[(target_df['cossim'] > outlier_threshold) &
                                   (target_df['data_index'] > self.start_index) &
                                   (target_df['data_index'] < (self.start_index + len(self)))].sample().data_index.item()
@@ -368,7 +368,7 @@ class ListDatasetWithIndex(Dataset):
         self.image_is_saved_with_swapped_B_and_R = image_is_saved_with_swapped_B_and_R
 
         if isinstance(transform, list):
-            # split transform for returning both 112x112 and 128x128
+
             transform_random1, transform_random2, transform_determ1, transform_determ2 = transform
             self.transform_random1 = transform_random1
             self.transform_random2 = transform_random2
@@ -399,7 +399,7 @@ class ListDatasetWithIndex(Dataset):
                 sample = self.transform_random1(sample)
             sample1 = self.transform_determ1(sample)
 
-            # sample2 is usually original shape
+
             if self.deterministic:
                 sample2 = sample
             else:
@@ -442,29 +442,12 @@ class ListDatasetWithIndex(Dataset):
         return return_dict
 
 
-# self,
-# root_dir,
-# swap_color_order=False,
-# rec_label_to_another_label=None,
-# transform=None,
-# target_transform=None,
-# resolution=112,
-# return_label=False,
-# return_extra_same_label_samples=False,
-# subset='0-all',
-# deterministic=False,
-# encoded_rec=None,
-# return_identity_image='',
-# return_face_contour='',
-# trim_outlier=False
-
-# Bernardo
 class ListDatasetWithClasses(Dataset):
     def __init__(self, img_list, subset, transform, target_transform, return_label, deterministic, image_is_saved_with_swapped_B_and_R=False,
-                 return_extra_same_label_samples=False,   # Bernardo (based on class FaceMXDataset)
-                 return_identity_image='',                # Bernardo (based on class FaceMXDataset)
-                 return_face_contour='',                  # Bernardo (based on class FaceMXDataset)
-                 trim_outlier=False                       # Bernardo (based on class FaceMXDataset)
+                 return_extra_same_label_samples=False,
+                 return_identity_image='',
+                 return_face_contour='',
+                 trim_outlier=False
                 ):
         super(ListDatasetWithClasses, self).__init__()
 
@@ -483,9 +466,8 @@ class ListDatasetWithClasses(Dataset):
 
         self.img_list = img_list
         
-        # self.dummy_labels = np.arange(len(img_list)) % 100                                    # original
-        self.dummy_labels = np.array([int(img_path.split('/')[-2]) for img_path in img_list])   # Bernardo
-        self.human_labels = [img_path.split('/')[-2] for img_path in img_list]                    # Bernardo
+        self.dummy_labels = np.array([int(img_path.split('/')[-2]) for img_path in img_list])
+        self.human_labels = [img_path.split('/')[-2] for img_path in img_list]
 
         rows = []
         for idx, (name, label) in enumerate(zip(self.img_list, self.dummy_labels)):
@@ -497,7 +479,7 @@ class ListDatasetWithClasses(Dataset):
         self.image_is_saved_with_swapped_B_and_R = image_is_saved_with_swapped_B_and_R
 
         if isinstance(transform, list):
-            # split transform for returning both 112x112 and 128x128
+
             transform_random1, transform_random2, transform_determ1, transform_determ2 = transform
             self.transform_random1 = transform_random1
             self.transform_random2 = transform_random2
@@ -512,22 +494,14 @@ class ListDatasetWithClasses(Dataset):
         self.return_label = return_label
         self.deterministic = deterministic
 
-        # Bernardo (based on class FaceMXDataset)
         self.return_extra_same_label_samples = return_extra_same_label_samples
-        # if return_extra_same_label_samples:
-        #     groupby = self.record_info.groupby('label')
-        #     self.label_groups = {}
-        #     for k, v in groupby.groups.items():
-        #         self.label_groups[k] = np.array(v)
 
-        # Bernardo (based on class FaceMXDataset)
         self.return_identity_image = return_identity_image
         if return_identity_image:
             self.id_image_df = torch.load(os.path.join(os.environ.get('REPO_ROOT'), return_identity_image))['similarity_df']
         else:
             self.id_image_df = None
 
-        # Bernardo (based on class FaceMXDataset)
         self.return_face_contour = return_face_contour
         if return_face_contour:
             print('loading mask')
@@ -541,7 +515,6 @@ class ListDatasetWithClasses(Dataset):
         else:
             self.mask = None
 
-        # Bernardo (based on class FaceMXDataset)
         self.trim_outlier = trim_outlier
 
         self.rec_label_to_another_label = dict(zip(self.dummy_labels, self.dummy_labels))
@@ -560,7 +533,7 @@ class ListDatasetWithClasses(Dataset):
                 sample = self.transform_random1(sample)
             sample1 = self.transform_determ1(sample)
 
-            # sample2 is usually original shape
+
             if self.deterministic:
                 sample2 = sample
             else:
@@ -595,19 +568,12 @@ class ListDatasetWithClasses(Dataset):
         return_dict['image'] = sample
         return_dict['index'] = index
         return_dict['orig'] = orig_sample
-        
-        # # original
-        # if self.return_label:
-        #     return_dict['class_label'] = torch.tensor(0)
-        #     return_dict['human_label'] = 'subject_0'
 
-        # Bernardo (based on class FaceMXDataset)
         target = self.dummy_labels[index]
         if self.return_label:
             return_dict['class_label'] = target
             return_dict['human_label'] = 'subject_' + str(self.human_labels[index])
 
-        # Bernardo (based on class FaceMXDataset)
         if self.return_identity_image:
             repeat = 0
             while True:
@@ -616,32 +582,15 @@ class ListDatasetWithClasses(Dataset):
                 if repeat > 10: print('repeat error')
                 if good_image_index != index or repeat > 10:
                     break
-            # id_image, id_target, id_record_label = self.read_sample(good_image_index)
+
             id_image = sample
-            # id_image, orig_id_image = self.transform_images(id_image)
-            # assert id_target == target
+
+
             return_dict['id_image'] = id_image
 
-        # Bernardo (based on class FaceMXDataset)
         if self.return_face_contour:
             return_dict['face_contour'] = self.mask[index]
 
-        '''
-        # Bernardo (based on class FaceMXDataset)
-        if self.return_extra_same_label_samples:
-            same_label_index = self.label_groups[record_label.item()]
-            extra_index = np.random.choice(same_label_index, 1)[0]
-            extra_sample, extra_target, _ = self.read_sample(extra_index)
-            extra_sample, extra_orig_sample = self.transform_images(extra_sample)
-            assert extra_target.item() == target.item()
-            return_dict['extra_image'] = extra_sample
-            return_dict['extra_index'] = extra_index
-            return_dict['extra_orig'] = extra_orig_sample
-            if self.encoded_rec is not None:
-                extra_encoded = self.encoded_rec.read_by_index(extra_index)
-                return_dict['extra_encoded'] = extra_encoded
-        '''
-                
         return return_dict
 
 
@@ -723,8 +672,7 @@ def make_dataset(data_path,
                                        deterministic=deterministic,
                                        image_is_saved_with_swapped_B_and_R=True)
         return dataset
-    
-    # Bernardo
+
     elif encoded_rec is None:
         assert os.path.isdir(data_path)
         all_files = get_all_files(data_path, extension_list=['.png', '.jpg', '.jpeg'], sorted=True)
@@ -735,10 +683,10 @@ def make_dataset(data_path,
                                          return_label=True,
                                          deterministic=deterministic,
                                          image_is_saved_with_swapped_B_and_R=True,
-                                         return_extra_same_label_samples=return_extra_same_label_samples,  # Bernardo
-                                         return_identity_image=return_identity_image,                      # Bernardo
-                                         return_face_contour=return_face_contour,                          # Bernardo
-                                         trim_outlier=trim_outlier,                                        # Bernardo
+                                         return_extra_same_label_samples=return_extra_same_label_samples,
+                                         return_identity_image=return_identity_image,
+                                         return_face_contour=return_face_contour,
+                                         trim_outlier=trim_outlier,
                                          )
         return dataset
 

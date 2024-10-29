@@ -28,7 +28,7 @@ class Upsample2D(nn.Module):
         elif use_conv:
             conv = nn.Conv2d(self.channels, self.out_channels, 3, padding=1)
 
-        # TODO(Suraj, Patrick) - clean up after weight dicts are correctly renamed
+
         if name == "conv":
             self.conv = conv
         else:
@@ -41,7 +41,7 @@ class Upsample2D(nn.Module):
 
         x = F.interpolate(x, scale_factor=2.0, mode="nearest")
 
-        # TODO(Suraj, Patrick) - clean up after weight dicts are correctly renamed
+
         if self.use_conv:
             if self.name == "conv":
                 x = self.conv(x)
@@ -75,7 +75,7 @@ class Downsample2D(nn.Module):
             assert self.channels == self.out_channels
             conv = nn.AvgPool2d(kernel_size=stride, stride=stride)
 
-        # TODO(Suraj, Patrick) - clean up after weight dicts are correctly renamed
+
         if name == "conv":
             self.Conv2d_0 = conv
             self.conv = conv
@@ -128,11 +128,11 @@ class FirUpsample2D(nn.Module):
 
         assert isinstance(factor, int) and factor >= 1
 
-        # Setup filter kernel.
+
         if kernel is None:
             kernel = [1] * factor
 
-        # setup kernel
+
         kernel = torch.tensor(kernel, dtype=torch.float32)
         if kernel.ndim == 1:
             kernel = torch.outer(kernel, kernel)
@@ -148,7 +148,7 @@ class FirUpsample2D(nn.Module):
             p = (kernel.shape[0] - factor) - (convW - 1)
 
             stride = (factor, factor)
-            # Determine data dimensions.
+
             output_shape = ((x.shape[2] - 1) * factor + convH, (x.shape[3] - 1) * factor + convW)
             output_padding = (
                 output_shape[0] - (x.shape[2] - 1) * stride[0] - convH,
@@ -158,7 +158,7 @@ class FirUpsample2D(nn.Module):
             inC = weight.shape[1]
             num_groups = x.shape[1] // inC
 
-            # Transpose weights.
+
             weight = torch.reshape(weight, (num_groups, -1, inC, convH, convW))
             weight = torch.flip(weight, dims=[3, 4]).permute(0, 2, 1, 3, 4)
             weight = torch.reshape(weight, (num_groups * inC, -1, convH, convW))
@@ -216,7 +216,7 @@ class FirDownsample2D(nn.Module):
         if kernel is None:
             kernel = [1] * factor
 
-        # setup kernel
+
         kernel = torch.tensor(kernel, dtype=torch.float32)
         if kernel.ndim == 1:
             kernel = torch.outer(kernel, kernel)
@@ -329,8 +329,8 @@ class ResnetBlock2D(nn.Module):
     def forward(self, x, temb):
         hidden_states = x
 
-        # make sure hidden states is in float32
-        # when running in half-precision
+
+
         hidden_states = self.norm1(hidden_states).type(hidden_states.dtype)
         hidden_states = self.nonlinearity(hidden_states)
 
@@ -347,8 +347,8 @@ class ResnetBlock2D(nn.Module):
             temb = self.time_emb_proj(self.nonlinearity(temb))[:, :, None, None]
             hidden_states = hidden_states + temb
 
-        # make sure hidden states is in float32
-        # when running in half-precision
+
+
         hidden_states = self.norm2(hidden_states).type(hidden_states.dtype)
         hidden_states = self.nonlinearity(hidden_states)
 
@@ -445,7 +445,7 @@ def upfirdn2d_native(input, kernel, up=1, down=1, pad=(0, 0)):
 
     out = input.view(-1, in_h, 1, in_w, 1, minor)
 
-    # Temporary workaround for mps specific issue: https://github.com/pytorch/pytorch/issues/84535
+
     if input.device.type == "mps":
         out = out.to("cpu")
     out = F.pad(out, [0, 0, 0, up_x - 1, 0, 0, 0, up_y - 1])

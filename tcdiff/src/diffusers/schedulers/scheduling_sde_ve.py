@@ -1,18 +1,18 @@
-# Copyright 2022 Google Brain and The HuggingFace Team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
-# DISCLAIMER: This file is strongly influenced by https://github.com/yang-song/score_sde_pytorch
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import warnings
 from dataclasses import dataclass
@@ -79,7 +79,7 @@ class ScoreSdeVeScheduler(SchedulerMixin, ConfigMixin):
         correct_steps: int = 1,
         tensor_format: str = "pt",
     ):
-        # setable values
+
         self.timesteps = None
 
         self.set_sigmas(num_train_timesteps, sigma_min, sigma_max, sampling_eps)
@@ -205,7 +205,7 @@ class ScoreSdeVeScheduler(SchedulerMixin, ConfigMixin):
         )  # torch.repeat_interleave(timestep, sample.shape[0])
         timesteps = (timestep * (len(self.timesteps) - 1)).long()
 
-        # mps requires indices to be in the same device, so we use cpu as is the default with cuda
+
         timesteps = timesteps.to(self.discrete_sigmas.device)
 
         sigma = self.discrete_sigmas[timesteps].to(sample.device)
@@ -213,14 +213,14 @@ class ScoreSdeVeScheduler(SchedulerMixin, ConfigMixin):
         drift = self.zeros_like(sample)
         diffusion = (sigma**2 - adjacent_sigma**2) ** 0.5
 
-        # equation 6 in the paper: the model_output modeled by the network is grad_x log pt(x)
-        # also equation 47 shows the analog from SDE models to ancestral sampling methods
+
+
         drift = drift - diffusion[:, None, None, None] ** 2 * model_output
 
-        #  equation 6: sample noise for the diffusion term of
+
         noise = self.randn_like(sample, generator=generator)
         prev_sample_mean = sample - drift  # subtract because `dt` is a small negative timestep
-        # TODO is the variable diffusion the correct scaling term for the noise?
+
         prev_sample = prev_sample_mean + diffusion[:, None, None, None] * noise  # add impact of diffusion field g
 
         if not return_dict:
@@ -260,18 +260,18 @@ class ScoreSdeVeScheduler(SchedulerMixin, ConfigMixin):
                 "`self.timesteps` is not set, you need to run 'set_timesteps' after creating the scheduler"
             )
 
-        # For small batch sizes, the paper "suggest replacing norm(z) with sqrt(d), where d is the dim. of z"
-        # sample noise for correction
+
+
         noise = self.randn_like(sample, generator=generator)
 
-        # compute step size from the model_output, the noise, and the snr
+
         grad_norm = self.norm(model_output)
         noise_norm = self.norm(noise)
         step_size = (self.config.snr * noise_norm / grad_norm) ** 2 * 2
         step_size = step_size * torch.ones(sample.shape[0]).to(sample.device)
-        # self.repeat_scalar(step_size, sample.shape[0])
 
-        # compute corrected sample: model_output term and noise term
+
+
         prev_sample_mean = sample + step_size[:, None, None, None] * model_output
         prev_sample = prev_sample_mean + ((step_size * 2) ** 0.5)[:, None, None, None] * noise
 

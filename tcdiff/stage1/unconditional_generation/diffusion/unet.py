@@ -285,10 +285,10 @@ class AttentionBlock(nn.Module):
         self.norm = normalization(channels)
         self.qkv = conv_nd(1, channels, channels * 3, 1)
         if use_new_attention_order:
-            # split qkv before split heads
+
             self.attention = QKVAttention(self.num_heads)
         else:
-            # split heads before split qkv
+
             self.attention = QKVAttentionLegacy(self.num_heads)
 
         self.proj_out = zero_module(conv_nd(1, channels, channels, 1))
@@ -318,9 +318,9 @@ def count_flops_attn(model, _x, y):
     """
     b, c, *spatial = y[0].shape
     num_spatial = int(np.prod(spatial))
-    # We perform two matmuls with the same number of ops.
-    # The first computes the weight matrix, the second computes
-    # the combination of the value vectors.
+
+
+
     matmul_ops = 2 * b * (num_spatial ** 2) * c
     model.total_ops += th.DoubleTensor([matmul_ops])
 

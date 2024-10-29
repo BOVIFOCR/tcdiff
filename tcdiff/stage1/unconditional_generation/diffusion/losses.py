@@ -23,8 +23,8 @@ def normal_kl(mean1, logvar1, mean2, logvar2):
             break
     assert tensor is not None, "at least one argument must be a Tensor"
 
-    # Force variances to be Tensors. Broadcasting helps convert scalars to
-    # Tensors, but it does not work for th.exp().
+
+
     logvar1, logvar2 = [
         x if isinstance(x, th.Tensor) else th.tensor(x).to(tensor)
         for x in (logvar1, logvar2)

@@ -10,8 +10,8 @@ import torchvision.transforms as transforms
 from src.recognition.tface_model import Backbone
 from src.recognition.adaface import AdaFaceV3
 from src.general_utils import os_utils
-# from src.recognition import tface_model               # original
-from src.recognition import tface_reconstruction_model  # Bernardo
+
+from src.recognition import tface_reconstruction_model
 from functools import partial
 from typing import Dict
 
@@ -34,10 +34,10 @@ def same_config(config1, config2, skip_keys=[]):
 def download_ir_pretrained_statedict(backbone_name, dataset_name, loss_fn):
 
     if backbone_name == 'ir_101' and dataset_name == 'webface4m' and loss_fn == 'adaface':
-        root = os_utils.get_project_root(project_name='dcface')
+        root = os_utils.get_project_root(project_name='tcdiff')
         _name, _id = 'adaface_ir101_webface4m.ckpt', '18jQkqB0avFqWa0Pas52g54xNshUOQJpQ'
     elif backbone_name == 'ir_50' and dataset_name == 'webface4m' and loss_fn == 'adaface':
-        root = os_utils.get_project_root(project_name='dcface')
+        root = os_utils.get_project_root(project_name='tcdiff')
         _name, _id = 'adaface_ir50_webface4m.ckpt', '1BmDRrhPsHSbXcWZoYFPJg2KJn1sd3QpN'
     else:
         raise NotImplementedError()
@@ -48,7 +48,7 @@ def download_ir_pretrained_statedict(backbone_name, dataset_name, loss_fn):
         try:
             subprocess.check_call([os.path.expanduser('~/.local/bin/gdown'), '--id', _id])
         except:
-            # subprocess.check_call([os.path.expanduser('~/anaconda3/envs/pj3/bin/gdown'), '--id', _id])
+
             subprocess.check_call([os.path.expanduser('gdown'), '--id', _id])
         if not os.path.isdir(os.path.dirname(checkpoint_path)):
             subprocess.check_call(['mkdir', '-p', os.path.dirname(checkpoint_path)])
@@ -119,7 +119,7 @@ def make_resizer(library, filter, output_size):
             return x
     elif library == "PyTorch":
         import warnings
-        # ignore the numpy warnings
+
         warnings.filterwarnings("ignore")
         def func(x):
             x = torch.Tensor(x.transpose((2, 0, 1)))[None, ...]
@@ -150,138 +150,7 @@ def return_head(head_name='adaface', class_num=205990, head_m=0.4):
     return head
 
 
-'''
-class RecognitionModel(nn.Module):
 
-    def __init__(self, backbone: Backbone, head: AdaFaceV3, recognition_config: Dict, center: nn.Embedding):
-        super(RecognitionModel, self).__init__()
-        self.backbone = backbone
-        self.recognition_config = recognition_config
-
-        self.size = 112
-        self.resizer = make_resizer("PIL", "bilinear", (self.size, self.size))
-        self.totensor = transforms.ToTensor()
-        self.mean = torch.Tensor([0.5, 0.5, 0.5]).view(1, 3, 1, 1)
-        self.std = torch.Tensor([0.5, 0.5, 0.5]).view(1, 3, 1, 1)
-        self.swap_channel = True
-        self.head = head
-        self.center = center
-
-
-    def forward(self, x, orig_images=None):
-
-        if orig_images is not None and orig_images.shape[2] == self.size:
-            x = orig_images
-
-        elif x.shape[2] != self.size or x.shape[3] != self.size:
-            print('why is this happening?')
-            quantized_x = self.quantize_images(x)
-            x = self.resize_and_normalize(quantized_x, device=x.device)
-
-        if self.swap_channel:
-            x = torch.flip(x, dims=[1])
-
-        # from general_utils import img_utils
-        # import cv2
-        # cv2.imwrite('/mckim/temp/temp.png', img_utils.tensor_to_numpy(x[0].cpu()))
-        feature, norm, spatials = self.backbone(x, return_spatial=self.recognition_config.return_spatial)
-
-        if self.recognition_config.normalize_feature:
-            feature = feature
-        else:
-            feature = feature * norm
-
-        if self.recognition_config.return_spatial:
-            return feature, spatials
-        else:
-            return feature
-
-    def classify(self, features, norms, label):
-        return self.head(features, norms, label)
-
-    def feature_normalize(self, input_z):
-        input_norm = torch.norm(input_z, 2, -1, keepdim=True)
-        input_z = input_z / input_norm
-        return input_z, input_norm
-
-    def ce_loss(self, input, label):
-        input_z, _ = self.forward(input)
-        input_norm = torch.norm(input_z, 2, -1, keepdim=True)
-        input_z = input_z / input_norm
-        input_z_logits, _ = self.classify(input_z, input_norm, label)
-        loss_ce = F.cross_entropy(input_z_logits, label)
-        return loss_ce
-
-    def quantize_images(self, x):
-        if self.mean.device != x.device:
-            self.mean = self.mean.to(x.device)
-            self.std = self.std.to(x.device)
-        x = (x * self.std) + self.mean
-        x = (255.0 * x + 0.5).clamp(0.0, 255.0)
-        x = x.detach().cpu().numpy().astype(np.uint8)
-        return x
-
-    def resize_and_normalize(self, x, device):
-        out = resize_images(x, resizer=self.resizer, ToTensor=self.totensor,
-                            mean=self.mean, std=self.std, device=device)
-        return out
-'''
-
-
-'''
-def make_recognition_model(recognition_config, enable_training=False):
-
-    if not recognition_config:
-        return None
-
-    if 'ir_101' == recognition_config.backbone:
-        print('making IR_101')
-        backbone = tface_model.IR_101(input_size=(112, 112))
-        backbone_name = 'ir_101'
-    elif 'ir_50' == recognition_config.backbone:
-        print('making IR_50')
-        backbone_name = 'ir_50'
-        backbone = tface_model.IR_50(input_size=(112, 112))
-    else:
-        raise NotImplementedError()
-
-    head = return_head(head_name=recognition_config.head_name)
-
-    if recognition_config.ckpt_path:
-        print('loading backbone and head checkpoint from ')
-        print(recognition_config.ckpt_path)
-        statedict = torch.load(recognition_config.ckpt_path, map_location='cpu')['state_dict']
-        backbone.load_state_dict({k.replace("model.", ''): v for k, v in statedict.items() if 'model.' in k})
-        if head is not None:
-            head.load_state_dict({k.replace("head.", ''): v for k, v in statedict.items() if 'head.' in k})
-    else:
-        # load statedict
-        assert recognition_config.dataset == 'webface4m'
-        assert recognition_config.loss_fn == 'adaface'
-        print('Loading pretrained IR model trained with adaface webface4m')
-        model_statedict = download_ir_pretrained_statedict(backbone_name, 'webface4m', 'adaface')
-        backbone.load_state_dict(model_statedict, strict=True)
-
-    if recognition_config.center_path:
-        print('Loading precomputed center', recognition_config.center_path)
-        center = torch.load(recognition_config.center_path, map_location='cpu')['center']
-        center_emb = nn.Embedding(num_embeddings=center.shape[0], embedding_dim=center.shape[1])
-        center_emb.load_state_dict({'weight': center}, strict=True)
-    else:
-        center_emb = None
-
-    model = RecognitionModel(backbone=backbone, head=head, recognition_config=recognition_config, center=center_emb)
-    if enable_training:
-        print('enable training')
-        pass
-    else:
-        model = model.eval()
-        model.train = partial(disabled_train, self=model)
-        for param in model.parameters():
-            param.requires_grad = False
-
-    return model
-'''
 
 
 class ReconstructionModel(nn.Module):
@@ -297,58 +166,16 @@ class ReconstructionModel(nn.Module):
         self.mean = torch.Tensor([0.5, 0.5, 0.5]).view(1, 3, 1, 1)
         self.std = torch.Tensor([0.5, 0.5, 0.5]).view(1, 3, 1, 1)
         self.swap_channel = True
-        # self.head = head
-        # self.center = center
-
 
     def get_arcface_embedding(self, x):
         embedd = F.normalize(self.backbone.arcface(x))
         return embedd
 
-
     def forward(self, embedd):
         pred_pointcloud, pred_3dmm = self.backbone.flameModel(embedd)
         render_image = None
-        # rendering = self.backbone.render.render_mesh(pred_pointcloud)
-        # render_image = (rendering.cpu().numpy().transpose(1, 2, 0).copy() * 255)[:, :, [2, 1, 0]]
-        # render_image = np.minimum(np.maximum(image, 0), 255).astype(np.uint8)
-        # print('pred_canonical_vertices.shape:', pred_canonical_vertices.shape)
-        # print('pred_shape_code.shape:', pred_shape_code.shape)
-        # sys.exit(0)
         return pred_pointcloud, pred_3dmm, render_image
         
-
-    '''
-    def classify(self, features, norms, label):
-        return self.head(features, norms, label)
-
-    def feature_normalize(self, input_z):
-        input_norm = torch.norm(input_z, 2, -1, keepdim=True)
-        input_z = input_z / input_norm
-        return input_z, input_norm
-
-    def ce_loss(self, input, label):
-        input_z, _ = self.forward(input)
-        input_norm = torch.norm(input_z, 2, -1, keepdim=True)
-        input_z = input_z / input_norm
-        input_z_logits, _ = self.classify(input_z, input_norm, label)
-        loss_ce = F.cross_entropy(input_z_logits, label)
-        return loss_ce
-
-    def quantize_images(self, x):
-        if self.mean.device != x.device:
-            self.mean = self.mean.to(x.device)
-            self.std = self.std.to(x.device)
-        x = (x * self.std) + self.mean
-        x = (255.0 * x + 0.5).clamp(0.0, 255.0)
-        x = x.detach().cpu().numpy().astype(np.uint8)
-        return x
-
-    def resize_and_normalize(self, x, device):
-        out = resize_images(x, resizer=self.resizer, ToTensor=self.totensor,
-                            mean=self.mean, std=self.std, device=device)
-        return out
-    '''
 
 
 def make_3d_face_reconstruction_model(reconstruction_config, enable_training=False):
@@ -356,47 +183,12 @@ def make_3d_face_reconstruction_model(reconstruction_config, enable_training=Fal
     if not reconstruction_config:
         return None
 
-    # if 'ir_101' == reconstruction_config.backbone:
-    #     print('making IR_101')
-    #     backbone = tface_model.IR_101(input_size=(112, 112))
-    #     backbone_name = 'ir_101'
-    # elif 'ir_50' == reconstruction_config.backbone:
-    #     print('making IR_50')
-    #     backbone_name = 'ir_50'
-    #     backbone = tface_model.IR_50(input_size=(112, 112))
     if 'MICA' == reconstruction_config.backbone:
         print('\nmaking MICA')
         backbone = tface_reconstruction_model.get_MICA(input_size=(112, 112))
-        # backbone_name = 'MICA'
+
     else:
         raise NotImplementedError()
-
-    '''
-    head = return_head(head_name=reconstruction_config.head_name)
-
-    if reconstruction_config.ckpt_path:
-        print('loading backbone and head checkpoint from ')
-        print(reconstruction_config.ckpt_path)
-        statedict = torch.load(reconstruction_config.ckpt_path, map_location='cpu')['state_dict']
-        backbone.load_state_dict({k.replace("model.", ''): v for k, v in statedict.items() if 'model.' in k})
-        if head is not None:
-            head.load_state_dict({k.replace("head.", ''): v for k, v in statedict.items() if 'head.' in k})
-    else:
-        # load statedict
-        assert reconstruction_config.dataset == 'webface4m'
-        assert reconstruction_config.loss_fn == 'adaface'
-        print('Loading pretrained IR model trained with adaface webface4m')
-        model_statedict = download_ir_pretrained_statedict(backbone_name, 'webface4m', 'adaface')
-        backbone.load_state_dict(model_statedict, strict=True)
-
-    if reconstruction_config.center_path:
-        print('Loading precomputed center', reconstruction_config.center_path)
-        center = torch.load(reconstruction_config.center_path, map_location='cpu')['center']
-        center_emb = nn.Embedding(num_embeddings=center.shape[0], embedding_dim=center.shape[1])
-        center_emb.load_state_dict({'weight': center}, strict=True)
-    else:
-        center_emb = None
-    '''
 
     model = ReconstructionModel(backbone=backbone, reconstruction_config=reconstruction_config)
     if enable_training:

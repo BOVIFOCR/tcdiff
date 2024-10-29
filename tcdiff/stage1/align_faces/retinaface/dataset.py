@@ -45,8 +45,8 @@ class FaceDetectionDataset(data.Dataset):
 
         image_height, image_width = image.shape[:2]
 
-        # annotations will have the format
-        # 4: box, 10 landmarks, 1: landmarks / no landmarks
+
+
         num_annotations = 4 + 10 + 1
         annotations = np.zeros((0, num_annotations))
 
@@ -64,7 +64,7 @@ class FaceDetectionDataset(data.Dataset):
 
             if "landmarks" in label and label["landmarks"]:
                 landmarks = np.array(label["landmarks"])
-                # landmarks
+
                 annotation[0, 4:14] = landmarks.reshape(-1, 10)
                 if annotation[0, 4] < 0:
                     annotation[0, 14] = -1

@@ -1,17 +1,17 @@
-# coding=utf-8
-# Copyright 2021 The HuggingFace Inc. team.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 """Utilities to dynamically load objects from the Hub."""
 
 import importlib
@@ -34,7 +34,7 @@ def init_hf_modules():
     """
     Creates the cache directory for modules with an init, and adds it to the Python path.
     """
-    # This function has already been executed if HF_MODULES_CACHE already is in the Python path.
+
     if HF_MODULES_CACHE in sys.path:
         return
 
@@ -51,7 +51,7 @@ def create_dynamic_module(name: Union[str, os.PathLike]):
     """
     init_hf_modules()
     dynamic_module_path = Path(HF_MODULES_CACHE) / name
-    # If the parent module does not exist yet, recursively create it.
+
     if not dynamic_module_path.parent.exists():
         create_dynamic_module(dynamic_module_path.parent)
     os.makedirs(dynamic_module_path, exist_ok=True)
@@ -70,11 +70,11 @@ def get_relative_imports(module_file):
     with open(module_file, "r", encoding="utf-8") as f:
         content = f.read()
 
-    # Imports of the form `import .xxx`
+
     relative_imports = re.findall("^\s*import\s+\.(\S+)\s*$", content, flags=re.MULTILINE)
-    # Imports of the form `from .xxx import yyy`
+
     relative_imports += re.findall("^\s*from\s+\.(\S+)\s+import", content, flags=re.MULTILINE)
-    # Unique-ify
+
     return list(set(relative_imports))
 
 
@@ -90,7 +90,7 @@ def get_relative_import_files(module_file):
     files_to_check = [module_file]
     all_relative_imports = []
 
-    # Let's recurse through all relative imports
+
     while not no_change:
         new_imports = []
         for f in files_to_check:
@@ -114,14 +114,14 @@ def check_imports(filename):
     with open(filename, "r", encoding="utf-8") as f:
         content = f.read()
 
-    # Imports of the form `import xxx`
+
     imports = re.findall("^\s*import\s+(\S+)\s*$", content, flags=re.MULTILINE)
-    # Imports of the form `from xxx import yyy`
+
     imports += re.findall("^\s*from\s+(\S+)\s+import", content, flags=re.MULTILINE)
-    # Only keep the top-level module
+
     imports = [imp.split(".")[0] for imp in imports if not imp.startswith(".")]
 
-    # Unique-ify and test we got them all
+
     imports = list(set(imports))
     missing_packages = []
     for imp in imports:
@@ -205,7 +205,7 @@ def get_cached_module_file(
     Returns:
         `str`: The path to the module inside the cache.
     """
-    # Download and cache module_file from the repo `pretrained_model_name_or_path` of grab it if it's a local file.
+
     pretrained_model_name_or_path = str(pretrained_model_name_or_path)
     module_file_or_url = os.path.join(pretrained_model_name_or_path, module_file)
     submodule = "local"
@@ -214,7 +214,7 @@ def get_cached_module_file(
         resolved_module_file = module_file_or_url
     else:
         try:
-            # Load from URL or cache if already cached
+
             resolved_module_file = cached_download(
                 module_file_or_url,
                 cache_dir=cache_dir,
@@ -229,16 +229,16 @@ def get_cached_module_file(
             logger.error(f"Could not locate the {module_file} inside {pretrained_model_name_or_path}.")
             raise
 
-    # Check we have all the requirements in our environment
+
     modules_needed = check_imports(resolved_module_file)
 
-    # Now we move the module inside our cached dynamic modules.
+
     full_submodule = DIFFUSERS_DYNAMIC_MODULE_NAME + os.path.sep + submodule
     create_dynamic_module(full_submodule)
     submodule_path = Path(HF_MODULES_CACHE) / full_submodule
-    # We always copy local files (we could hash the file to see if there was a change, and give them the name of
-    # that hash, to only copy when there is a modification but it seems overkill for now).
-    # The only reason we do the copy is to avoid putting too many folders in sys.path.
+
+
+
     shutil.copy(resolved_module_file, submodule_path / module_file)
     for module_needed in modules_needed:
         module_needed = f"{module_needed}.py"
@@ -316,11 +316,11 @@ def get_class_from_dynamic_module(
     Examples:
 
     ```python
-    # Download module `modeling.py` from huggingface.co and cache then extract the class `MyBertModel` from this
-    # module.
+
+
     cls = get_class_from_dynamic_module("sgugger/my-bert-model", "modeling.py", "MyBertModel")
     ```"""
-    # And lastly we get the class inside our newly created module
+
     final_module = get_cached_module_file(
         pretrained_model_name_or_path,
         module_file,

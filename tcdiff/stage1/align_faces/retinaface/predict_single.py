@@ -73,13 +73,13 @@ class Model:
             landmarks = decode_landm(land.data[0], prior_box, self.variance)
             landmarks *= scale_landmarks
 
-            # ignore low scores
+
             valid_index = torch.where(scores > confidence_threshold)[0]
             boxes = boxes[valid_index]
             landmarks = landmarks[valid_index]
             scores = scores[valid_index]
 
-            # do NMS
+
             keep = nms(boxes, scores, nms_threshold)
             boxes = boxes[keep, :]
 

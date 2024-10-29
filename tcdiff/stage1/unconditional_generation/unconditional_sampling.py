@@ -23,7 +23,7 @@ import math
 import time
 
 
-# added
+
 def load_reference(data_dir, batch_size, image_size, class_cond=False):
     data = load_data(
         data_dir=data_dir,
@@ -41,8 +41,8 @@ def load_reference(data_dir, batch_size, image_size, class_cond=False):
 def main():
     args = create_argparser().parse_args()
 
-    # th.manual_seed(0)         # original
-    th.manual_seed(args.seed)   # Bernardo
+
+    th.manual_seed(args.seed)
 
     dist_util.setup_dist()
     logger.configure(dir=args.save_dir)
@@ -110,7 +110,7 @@ def create_argparser():
         model_path="",
         save_dir="",
         save_latents=False,
-        seed=0,   # Bernardo
+        seed=0,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

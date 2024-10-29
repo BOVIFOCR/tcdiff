@@ -13,8 +13,7 @@ from torch.nn import functional as F
 from src.general_utils.op_utils import count_params
 from src.models.conditioner import make_condition
 from src.models import model_helper
-# from src.losses.consistency_loss import calc_identity_consistency_loss                             # original
-from src.losses.consistency_loss import calc_identity_consistency_loss, calc_3dmm_consistency_loss   # Bernardo
+from src.losses.consistency_loss import calc_identity_consistency_loss, calc_3dmm_consistency_loss
 from src.recognition.external_mapping import make_external_mapping
 from src.recognition.label_mapping import make_label_mapping
 from src.recognition.recognition_helper import disabled_train
@@ -31,9 +30,9 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
 
     def __init__(self, datamodule=None, unet_config=None, optimizer=None, paths=None, sampler=None, ckpt_path=None, *args, **kwargs):
 
-        # this line allows to access init params with 'self.hparams' attribute
-        # also ensures init params will be stored in ckpt
-        # ex: self.hparams.net.keywords['input_size']
+
+
+
         self.save_hyperparameters(logger=False)
         super(TrainerWith3DMMConsistencyConstraints, self).__init__()
         self.model = model_helper.make_unet(unet_config)
@@ -54,7 +53,7 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
                                                   beta_end=sampler['beta_end'],
                                                   tensor_format="pt")
 
-        # disabled training
+
         self.recognition_model: RecognitionModel = make_recognition_model(self.hparams.recognition)
         if same_config(self.hparams.recognition, self.hparams.recognition_eval,
                        skip_keys=['return_spatial', 'center_path']):
@@ -62,14 +61,9 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
         else:
             self.recognition_model_eval: RecognitionModel = make_recognition_model(self.hparams.recognition_eval)
 
-        # 3D face reconstruction model
+
         self.reconstruction_model: ReconstructionModel = make_3d_face_reconstruction_model(self.hparams.reconstruction)
         self.reconstruction_model_eval = self.reconstruction_model
-        # if same_config(self.hparams.reconstruction, self.hparams.reconstruction_eval, skip_keys=['return_spatial', 'center_path']):
-        #     self.reconstruction_model_eval = self.reconstruction_model
-        # else:
-        #     # self.reconstruction_model_eval: ReconstructionModel = make_3d_face_reconstruction_model(self.hparams.reconstruction_eval)
-        #     self.reconstruction_model_eval: ReconstructionModel = make_3d_face_reconstruction_model(self.hparams.reconstruction_eval)
 
         self.label_mapping = make_label_mapping(self.hparams.label_mapping, self.hparams.unet_config)
         self.external_mapping = make_external_mapping(self.hparams.external_mapping, self.hparams.unet_config)
@@ -122,11 +116,11 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
 
     @rank_zero_only
     def on_train_start(self):
-        # by default lightning executes validation step sanity checks before training starts,
-        # so we need to make sure val_acc_best doesn't store accuracy from these checks
+
+
         print('copying files', self.hparams.paths.root_dir)
         if self.current_epoch == 0:
-            # one time copy of project files
+
             os.makedirs(self.hparams.paths.output_dir, exist_ok=True)
             copy_project_files(self.hparams.paths.root_dir, self.hparams.paths.output_dir)
 
@@ -140,7 +134,7 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
     def save_batch(self, current_epoch, batch_idx, batch, output_dir):
         dir_save_batch = os.path.join(output_dir, f'batch_samples/epoch_{str(current_epoch).zfill(3)}/batch_{str(batch_idx).zfill(6)}')
         os.makedirs(dir_save_batch, exist_ok=True)
-        # print(f'Saving batch {batch_idx}')
+
 
         for batch_key in batch.keys():
             if not batch[batch_key] is None:
@@ -157,9 +151,9 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
                     for idx_pc, pc_torch in enumerate(batch[batch_key]):
                         pc_file_name = f'{batch_key}_{str(idx_pc).zfill(4)}'
                         save_ply(f'{dir_save_batch}/{pc_file_name}.ply', pc_torch, faces=faces)
-                        # save_obj(f'{dir_save_batch}/{pc_file_name}.obj', pc_torch, faces=faces)
+
                 else:
-                    # print(f"batch[{batch_key}]: {batch[batch_key]}")
+
                     pass
 
 
@@ -168,7 +162,7 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
         noise = torch.randn(clean_images.shape).to(clean_images.device)
         bsz = clean_images.shape[0]
 
-        # Sample a random timestep for each image
+
         timesteps = torch.randint(
             0, self.noise_scheduler.config.num_train_timesteps, (bsz,), device=clean_images.device
         ).long()
@@ -192,7 +186,7 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
                 loss_dict[f'{stage}/vq_loss'] = vqloss
                 total_loss = total_loss + vqloss
 
-            # extra identity_consistency_loss_lambda
+
             if self.hparams.losses.identity_consistency_loss_lambda > 0 or \
                     self.hparams.losses.spatial_consistency_loss_lambda > 0:
                 id_loss, spatial_loss = calc_identity_consistency_loss(eps=noise_pred, timesteps=timesteps,
@@ -204,7 +198,7 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
                     loss_dict[f'{stage}/spatial_loss'] = spatial_loss
                 loss_dict[f'{stage}/id_loss'] = id_loss
 
-            # 3D consistency constraint
+
             if self.hparams.losses.threeDMM_consistency_loss_lambda > 0:
                 threeDMM_loss, \
                 x0_pred, id_image, \
@@ -216,7 +210,7 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
                 loss_dict[f'{stage}/3dmm_loss'] = threeDMM_loss
 
                 if batch_idx == 0:
-                    # batch.keys(): dict_keys(['image', 'index', 'orig', 'class_label', 'human_label', 'id_image', 'extra_image', 'extra_index', 'extra_orig'])
+
                     batch['noisy_images'] = noisy_images
                     batch['noise_pred'] = noise_pred
                     batch['x0_pred'] = x0_pred
@@ -227,7 +221,7 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
                     batch['id_image_3dmm'] = id_image_3dmm
                     batch['id_image_render_image'] = id_image_render_image
                     self.save_batch(self.current_epoch, batch_idx, batch, self.hparams.paths.output_dir)
-                    # sys.exit(0)
+
 
             loss_dict[f'{stage}/total_loss'] = total_loss
 
@@ -251,9 +245,9 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
 
 
     def training_step(self, batch, batch_idx, optimizer_idx=0):
-        # import cv2
-        # from src.general_utils.img_utils import tensor_to_numpy
-        # cv2.imwrite('/mckim/temp/temp3.png',tensor_to_numpy(batch['image'].cpu()[10])) # this is in rgb. so wrong color saved
+
+
+
 
         loss, loss_dict = self.shared_step(batch, batch_idx, stage='train', optimizer_idx=optimizer_idx)
         if self.hparams.use_ema:
@@ -262,7 +256,7 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
             self.ema_model.step(self.model)
             self.log("ema_decay", self.ema_model.decay, prog_bar=True, logger=True, on_step=True, on_epoch=False)
 
-        # self.log_dict(loss_dict, prog_bar=True, logger=True, on_step=True, on_epoch=True)
+
         self.log_dict(loss_dict, prog_bar=True)
 
         return loss

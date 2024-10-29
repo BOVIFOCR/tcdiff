@@ -59,13 +59,13 @@ def random_crop(
         boxes_t[:, 2:] = np.minimum(boxes_t[:, 2:], roi[2:])
         boxes_t[:, 2:] = boxes_t[:, 2:] - roi[:2]
 
-        # landm
+
         landms_t[:, :, :2] = landms_t[:, :, :2] - roi[:2]
         landms_t[:, :, :2] = np.maximum(landms_t[:, :, :2], np.array([0, 0]))
         landms_t[:, :, :2] = np.minimum(landms_t[:, :, :2], roi[2:] - roi[:2])
         landms_t = landms_t.reshape([-1, 10])
 
-        # make sure that the cropped image contains at least one face > 16 pixel at training image scale
+
         b_w_t = (boxes_t[:, 2] - boxes_t[:, 0] + 1) / w * img_dim
         b_h_t = (boxes_t[:, 3] - boxes_t[:, 1] + 1) / h * img_dim
         mask_b = np.minimum(b_w_t, b_h_t) > 0.0
@@ -91,7 +91,7 @@ def random_horizontal_flip(
         boxes = boxes.copy()
         boxes[:, 0::2] = width - boxes[:, 2::-2]
 
-        # landm
+
         landms = landms.copy()
         landms = landms.reshape([-1, 5, 2])
         landms[:, :, 0] = width - landms[:, :, 0]

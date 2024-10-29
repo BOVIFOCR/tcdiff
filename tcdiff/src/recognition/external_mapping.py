@@ -32,7 +32,7 @@ def positionalencoding2d(d_model, height, width):
         raise ValueError("Cannot use sin/cos positional encoding with "
                          "odd dimension (got dim={:d})".format(d_model))
     pe = torch.zeros(d_model, height, width)
-    # Each dimension use half of d_model
+
     d_model = int(d_model / 2)
     div_term = torch.exp(torch.arange(0., d_model, 2) *
                          -(math.log(10000.0) / d_model))
@@ -380,7 +380,7 @@ class ExternalMappingV4Dropout(nn.Module):
 
 class ExternalMappingV5(nn.Module):
 
-    # for using as a vector: image_and_patchstat_spatial
+
 
     def __init__(self, return_spatial, out_size=(16,16), out_channel=64):
 

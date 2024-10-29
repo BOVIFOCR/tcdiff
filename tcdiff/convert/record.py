@@ -49,8 +49,8 @@ class RecordReader():
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--rec_path', type=str, default='dcface_0.5m_oversample_xid/record')
-    parser.add_argument('--save_path', type=str, default='dcface_0.5m_oversample_xid/images')
+    parser.add_argument('--rec_path', type=str, default='tcdiff_0.5m_oversample_xid/record')
+    parser.add_argument('--save_path', type=str, default='tcdiff_0.5m_oversample_xid/images')
     args = parser.parse_args()
 
     reader = RecordReader(root=args.rec_path)

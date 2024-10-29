@@ -157,7 +157,7 @@ class RetinaFace(pl.LightningModule):  # pylint: disable=R0901
 
             boxes *= scale
 
-            # do NMS
+
             keep = nms(boxes, scores, self.config.val_parameters.iou_threshold)
             boxes = boxes[keep, :].cpu().numpy()
 

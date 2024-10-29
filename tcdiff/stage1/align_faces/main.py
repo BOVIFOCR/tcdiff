@@ -61,7 +61,7 @@ if __name__ == '__main__':
             row = {'status': 'success', 'image_path':image_path, 'idx':idx}
             success_result.append(row)
 
-            # aligned save
+
             save_path = image_path.replace(args.root, args.save_root)
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
             aligned_img.save(save_path)

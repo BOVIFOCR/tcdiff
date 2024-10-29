@@ -97,10 +97,10 @@ class UNet2DConditionModelV2(ModelMixin, ConfigMixin):
         self.sample_size = sample_size
         time_embed_dim = block_out_channels[0] * 4
 
-        # input
+
         self.conv_in = nn.Conv2d(in_channels, block_out_channels[0], kernel_size=3, padding=(1, 1))
 
-        # time
+
         self.time_proj = Timesteps(block_out_channels[0], flip_sin_to_cos, freq_shift)
         timestep_input_dim = block_out_channels[0]
 
@@ -110,7 +110,7 @@ class UNet2DConditionModelV2(ModelMixin, ConfigMixin):
         self.mid_block = None
         self.up_blocks = nn.ModuleList([])
 
-        # down
+
         output_channel = block_out_channels[0]
         for i, down_block_type in enumerate(down_block_types):
             input_channel = output_channel
@@ -135,7 +135,7 @@ class UNet2DConditionModelV2(ModelMixin, ConfigMixin):
             )
             self.down_blocks.append(down_block)
 
-        # mid
+
         self.mid_block = DualCondUNetMidBlock2D(
             in_channels=block_out_channels[-1],
             temb_channels=time_embed_dim,
@@ -148,7 +148,7 @@ class UNet2DConditionModelV2(ModelMixin, ConfigMixin):
             add_condition_dim=add_condition_dim
         )
 
-        # up
+
         reversed_block_out_channels = list(reversed(block_out_channels))
         output_channel = reversed_block_out_channels[0]
         for i, up_block_type in enumerate(up_block_types):
@@ -177,7 +177,7 @@ class UNet2DConditionModelV2(ModelMixin, ConfigMixin):
             self.up_blocks.append(up_block)
             prev_output_channel = output_channel
 
-        # out
+
         self.conv_norm_out = nn.GroupNorm(num_channels=block_out_channels[0], num_groups=norm_num_groups, eps=norm_eps)
         self.conv_act = nn.SiLU()
         self.conv_out = nn.Conv2d(block_out_channels[0], out_channels, 3, padding=1)
@@ -206,9 +206,9 @@ class UNet2DConditionModelV2(ModelMixin, ConfigMixin):
 
     def _set_gradient_checkpointing(self, module, value=False):
         if isinstance(module, (CrossAttnDownBlock2D,
-                               # DownBlock2D,
+
                                CrossAttnUpBlock2D,
-                               # UpBlock2D
+
                                )):
             module.gradient_checkpointing = value
 
@@ -237,11 +237,11 @@ class UNet2DConditionModelV2(ModelMixin, ConfigMixin):
         add_hidden = encoder_hidden_states['add']
         concat_hidden = encoder_hidden_states['concat']
 
-        # 0. center input if necessary
+
         if self.config.center_input_sample:
             sample = 2 * sample - 1.0
 
-        # 1. time
+
         timesteps = timestep
         if not torch.is_tensor(timesteps):
             timesteps = torch.tensor([timesteps], dtype=torch.long, device=sample.device)
@@ -249,16 +249,16 @@ class UNet2DConditionModelV2(ModelMixin, ConfigMixin):
             timesteps = timesteps.to(dtype=torch.float32)
             timesteps = timesteps[None].to(device=sample.device)
 
-        # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
+
         timesteps = timesteps.expand(sample.shape[0])
 
         t_emb = self.time_proj(timesteps)
         emb = self.time_embedding(t_emb)
 
-        # 2. pre-process
+
         sample = self.conv_in(sample)
 
-        # 3. down
+
         down_block_res_samples = (sample,)
         for downsample_block in self.down_blocks:
             if hasattr(downsample_block, "attentions") and downsample_block.attentions is not None:
@@ -272,10 +272,10 @@ class UNet2DConditionModelV2(ModelMixin, ConfigMixin):
 
             down_block_res_samples += res_samples
 
-        # 4. mid
+
         sample = self.mid_block(sample, emb, add_hidden)
 
-        # 5. up
+
         for upsample_block in self.up_blocks:
             res_samples = down_block_res_samples[-len(upsample_block.resnets) :]
             down_block_res_samples = down_block_res_samples[: -len(upsample_block.resnets)]
@@ -291,9 +291,9 @@ class UNet2DConditionModelV2(ModelMixin, ConfigMixin):
                 sample = upsample_block(hidden_states=sample, temb=emb, res_hidden_states_tuple=res_samples,
                                         condition=add_hidden)
 
-        # 6. post-process
-        # make sure hidden states is in float32
-        # when running in half-precision
+
+
+
         sample = self.conv_norm_out(sample.float()).type(sample.dtype)
         sample = self.conv_act(sample)
         sample = self.conv_out(sample)

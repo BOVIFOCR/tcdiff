@@ -13,7 +13,7 @@ def post_process(cfg):
         if cfg.model.cond_stage_config is not None:
             cfg.model.cond_stage_config.params.n_classes = 10572
     elif 'ffhq' in cfg.datamodule.dataset_name:
-        # dummy
+
         if cfg.model.cond_stage_config is not None:
             cfg.model.cond_stage_config.params.n_classes = 10572
     else:

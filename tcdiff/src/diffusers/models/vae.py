@@ -71,7 +71,7 @@ class Encoder(nn.Module):
         self.mid_block = None
         self.down_blocks = nn.ModuleList([])
 
-        # down
+
         output_channel = block_out_channels[0]
         for i, down_block_type in enumerate(down_block_types):
             input_channel = output_channel
@@ -93,7 +93,7 @@ class Encoder(nn.Module):
             )
             self.down_blocks.append(down_block)
 
-        # mid
+
         self.mid_block = UNetMidBlock2D(
             in_channels=block_out_channels[-1],
             resnet_eps=1e-6,
@@ -105,7 +105,7 @@ class Encoder(nn.Module):
             temb_channels=None,
         )
 
-        # out
+
         self.conv_norm_out = nn.GroupNorm(num_channels=block_out_channels[-1], num_groups=norm_num_groups, eps=1e-6)
         self.conv_act = nn.SiLU()
 
@@ -116,14 +116,14 @@ class Encoder(nn.Module):
         sample = x
         sample = self.conv_in(sample)
 
-        # down
+
         for down_block in self.down_blocks:
             sample = down_block(sample)
 
-        # middle
+
         sample = self.mid_block(sample)
 
-        # post-process
+
         sample = self.conv_norm_out(sample)
         sample = self.conv_act(sample)
         sample = self.conv_out(sample)
@@ -150,7 +150,7 @@ class Decoder(nn.Module):
         self.mid_block = None
         self.up_blocks = nn.ModuleList([])
 
-        # mid
+
         self.mid_block = UNetMidBlock2D(
             in_channels=block_out_channels[-1],
             resnet_eps=1e-6,
@@ -162,7 +162,7 @@ class Decoder(nn.Module):
             temb_channels=None,
         )
 
-        # up
+
         reversed_block_out_channels = list(reversed(block_out_channels))
         output_channel = reversed_block_out_channels[0]
         for i, up_block_type in enumerate(up_block_types):
@@ -187,7 +187,7 @@ class Decoder(nn.Module):
             self.up_blocks.append(up_block)
             prev_output_channel = output_channel
 
-        # out
+
         self.conv_norm_out = nn.GroupNorm(num_channels=block_out_channels[0], num_groups=norm_num_groups, eps=1e-6)
         self.conv_act = nn.SiLU()
         self.conv_out = nn.Conv2d(block_out_channels[0], out_channels, 3, padding=1)
@@ -196,14 +196,14 @@ class Decoder(nn.Module):
         sample = z
         sample = self.conv_in(sample)
 
-        # middle
+
         sample = self.mid_block(sample)
 
-        # up
+
         for up_block in self.up_blocks:
             sample = up_block(sample)
 
-        # post-process
+
         sample = self.conv_norm_out(sample)
         sample = self.conv_act(sample)
         sample = self.conv_out(sample)
@@ -217,9 +217,9 @@ class VectorQuantizer(nn.Module):
     multiplications and allows for post-hoc remapping of indices.
     """
 
-    # NOTE: due to a bug the beta term was applied to the wrong term. for
-    # backwards compatibility we use the buggy version by default, but you can
-    # specify legacy=False to fix it.
+
+
+
     def __init__(self, n_e, e_dim, beta, remap=None, unknown_index="random", sane_index_shape=False, legacy=True):
         super().__init__()
         self.n_e = n_e
@@ -272,10 +272,10 @@ class VectorQuantizer(nn.Module):
         return back.reshape(ishape)
 
     def forward(self, z):
-        # reshape z -> (batch, height, width, channel) and flatten
+
         z = z.permute(0, 2, 3, 1).contiguous()
         z_flattened = z.view(-1, self.e_dim)
-        # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
+
 
         d = (
             torch.sum(z_flattened**2, dim=1, keepdim=True)
@@ -288,16 +288,16 @@ class VectorQuantizer(nn.Module):
         perplexity = None
         min_encodings = None
 
-        # compute loss for embedding
+
         if not self.legacy:
             loss = self.beta * torch.mean((z_q.detach() - z) ** 2) + torch.mean((z_q - z.detach()) ** 2)
         else:
             loss = torch.mean((z_q.detach() - z) ** 2) + self.beta * torch.mean((z_q - z.detach()) ** 2)
 
-        # preserve gradients
+
         z_q = z + (z_q - z).detach()
 
-        # reshape back to match original input shape
+
         z_q = z_q.permute(0, 3, 1, 2).contiguous()
 
         if self.remap is not None:
@@ -311,18 +311,18 @@ class VectorQuantizer(nn.Module):
         return z_q, loss, (perplexity, min_encodings, min_encoding_indices)
 
     def get_codebook_entry(self, indices, shape):
-        # shape specifying (batch, height, width, channel)
+
         if self.remap is not None:
             indices = indices.reshape(shape[0], -1)  # add batch axis
             indices = self.unmap_to_all(indices)
             indices = indices.reshape(-1)  # flatten again
 
-        # get quantized latent vectors
+
         z_q = self.embedding(indices)
 
         if shape is not None:
             z_q = z_q.view(shape)
-            # reshape back to match original input shape
+
             z_q = z_q.permute(0, 3, 1, 2).contiguous()
 
         return z_q
@@ -411,7 +411,7 @@ class VQModel(ModelMixin, ConfigMixin):
     ):
         super().__init__()
 
-        # pass init params to Encoder
+
         self.encoder = Encoder(
             in_channels=in_channels,
             out_channels=latent_channels,
@@ -429,7 +429,7 @@ class VQModel(ModelMixin, ConfigMixin):
         )
         self.post_quant_conv = torch.nn.Conv2d(latent_channels, latent_channels, 1)
 
-        # pass init params to Decoder
+
         self.decoder = Decoder(
             in_channels=latent_channels,
             out_channels=out_channels,
@@ -452,7 +452,7 @@ class VQModel(ModelMixin, ConfigMixin):
     def decode(
         self, h: torch.FloatTensor, force_not_quantize: bool = False, return_dict: bool = True
     ) -> Union[DecoderOutput, torch.FloatTensor]:
-        # also go through quantization layer
+
         if not force_not_quantize:
             quant, emb_loss, info = self.quantize(h)
         else:
@@ -519,7 +519,7 @@ class AutoencoderKL(ModelMixin, ConfigMixin):
     ):
         super().__init__()
 
-        # pass init params to Encoder
+
         self.encoder = Encoder(
             in_channels=in_channels,
             out_channels=latent_channels,
@@ -531,7 +531,7 @@ class AutoencoderKL(ModelMixin, ConfigMixin):
             double_z=True,
         )
 
-        # pass init params to Decoder
+
         self.decoder = Decoder(
             in_channels=latent_channels,
             out_channels=out_channels,

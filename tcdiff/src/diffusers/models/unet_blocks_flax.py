@@ -1,15 +1,15 @@
-# Copyright 2022 The HuggingFace Team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
+
+
+
+
+
+
+
+
+
+
+
+
 
 import flax.linen as nn
 import jax.numpy as jnp
@@ -212,7 +212,7 @@ class FlaxCrossAttnUpBlock2D(nn.Module):
 
     def __call__(self, hidden_states, res_hidden_states_tuple, temb, encoder_hidden_states, deterministic=True):
         for resnet, attn in zip(self.resnets, self.attentions):
-            # pop res hidden states
+
             res_hidden_states = res_hidden_states_tuple[-1]
             res_hidden_states_tuple = res_hidden_states_tuple[:-1]
             hidden_states = jnp.concatenate((hidden_states, res_hidden_states), axis=-1)
@@ -276,7 +276,7 @@ class FlaxUpBlock2D(nn.Module):
 
     def __call__(self, hidden_states, res_hidden_states_tuple, temb, deterministic=True):
         for resnet in self.resnets:
-            # pop res hidden states
+
             res_hidden_states = res_hidden_states_tuple[-1]
             res_hidden_states_tuple = res_hidden_states_tuple[:-1]
             hidden_states = jnp.concatenate((hidden_states, res_hidden_states), axis=-1)
@@ -312,7 +312,7 @@ class FlaxUNetMidBlock2DCrossAttn(nn.Module):
     dtype: jnp.dtype = jnp.float32
 
     def setup(self):
-        # there is always at least one resnet
+
         resnets = [
             FlaxResnetBlock2D(
                 in_channels=self.in_channels,

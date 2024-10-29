@@ -1,18 +1,18 @@
-# coding=utf-8
-# Copyright 2022 The HuggingFace Inc. team.
-# Copyright (c) 2022, NVIDIA CORPORATION.  All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import os
 from functools import partial
@@ -35,7 +35,7 @@ def get_parameter_device(parameter: torch.nn.Module):
     try:
         return next(parameter.parameters()).device
     except StopIteration:
-        # For torch.nn.DataParallel compatibility in PyTorch 1.5
+
 
         def find_tensor_attributes(module: torch.nn.Module) -> List[Tuple[str, Tensor]]:
             tuples = [(k, v) for k, v in module.__dict__.items() if torch.is_tensor(v)]
@@ -50,7 +50,7 @@ def get_parameter_dtype(parameter: torch.nn.Module):
     try:
         return next(parameter.parameters()).dtype
     except StopIteration:
-        # For torch.nn.DataParallel compatibility in PyTorch 1.5
+
 
         def find_tensor_attributes(module: torch.nn.Module) -> List[Tuple[str, Tensor]]:
             tuples = [(k, v) for k, v in module.__dict__.items() if torch.is_tensor(v)]
@@ -90,13 +90,13 @@ def load_state_dict(checkpoint_file: Union[str, os.PathLike]):
 
 
 def _load_state_dict_into_model(model_to_load, state_dict):
-    # Convert old format to new format if needed from a PyTorch state_dict
-    # copy state_dict so _load_from_state_dict can modify it
+
+
     state_dict = state_dict.copy()
     error_msgs = []
 
-    # PyTorch's `_load_from_state_dict` does not copy parameters in a module's descendants
-    # so we need to apply the function recursively.
+
+
     def load(module: torch.nn.Module, prefix=""):
         args = (state_dict, prefix, {}, True, [], [], error_msgs)
         module._load_from_state_dict(*args)
@@ -187,23 +187,23 @@ class ModelMixin(torch.nn.Module):
 
         model_to_save = self
 
-        # Attach architecture to the config
-        # Save the config
+
+
         if is_main_process:
             model_to_save.save_config(save_directory)
 
-        # Save the model
+
         state_dict = model_to_save.state_dict()
 
-        # Clean the folder from a previous save
+
         for filename in os.listdir(save_directory):
             full_filename = os.path.join(save_directory, filename)
-            # If we have a shard file that is not going to be replaced, we delete it, but only from the main process
-            # in distributed settings to avoid race conditions.
+
+
             if filename.startswith(WEIGHTS_NAME[:-4]) and os.path.isfile(full_filename) and is_main_process:
                 os.remove(full_filename)
 
-        # Save the model
+
         save_function(state_dict, os.path.join(save_directory, WEIGHTS_NAME))
 
         logger.info(f"Model weights saved in {os.path.join(save_directory, WEIGHTS_NAME)}")
@@ -296,7 +296,7 @@ class ModelMixin(torch.nn.Module):
 
         user_agent = {"file_type": "model", "framework": "pytorch", "from_auto_class": from_auto_class}
 
-        # Load config if we don't provide a configuration
+
         config_path = pretrained_model_name_or_path
         model, unused_kwargs = cls.from_config(
             config_path,
@@ -320,12 +320,12 @@ class ModelMixin(torch.nn.Module):
             model = model.to(torch_dtype)
 
         model.register_to_config(_name_or_path=pretrained_model_name_or_path)
-        # This variable will flag if we're loading a sharded checkpoint. In this case the archive file is just the
-        # Load model
+
+
         pretrained_model_name_or_path = str(pretrained_model_name_or_path)
         if os.path.isdir(pretrained_model_name_or_path):
             if os.path.isfile(os.path.join(pretrained_model_name_or_path, WEIGHTS_NAME)):
-                # Load from a PyTorch checkpoint
+
                 model_file = os.path.join(pretrained_model_name_or_path, WEIGHTS_NAME)
             elif subfolder is not None and os.path.isfile(
                 os.path.join(pretrained_model_name_or_path, subfolder, WEIGHTS_NAME)
@@ -337,7 +337,7 @@ class ModelMixin(torch.nn.Module):
                 )
         else:
             try:
-                # Load from URL or cache if already cached
+
                 model_file = hf_hub_download(
                     pretrained_model_name_or_path,
                     filename=WEIGHTS_NAME,
@@ -390,7 +390,7 @@ class ModelMixin(torch.nn.Module):
                     f"containing a file named {WEIGHTS_NAME}"
                 )
 
-            # restore default dtype
+
         state_dict = load_state_dict(model_file)
         model, missing_keys, unexpected_keys, mismatched_keys, error_msgs = cls._load_pretrained_model(
             model,
@@ -400,7 +400,7 @@ class ModelMixin(torch.nn.Module):
             ignore_mismatched_sizes=ignore_mismatched_sizes,
         )
 
-        # Set model in evaluation mode to deactivate DropOut modules by default
+
         model.eval()
 
         if output_loading_info:
@@ -423,7 +423,7 @@ class ModelMixin(torch.nn.Module):
         pretrained_model_name_or_path,
         ignore_mismatched_sizes=False,
     ):
-        # Retrieve missing & unexpected_keys
+
         model_state_dict = model.state_dict()
         loaded_keys = [k for k in state_dict.keys()]
 
@@ -434,7 +434,7 @@ class ModelMixin(torch.nn.Module):
         missing_keys = list(set(expected_keys) - set(loaded_keys))
         unexpected_keys = list(set(loaded_keys) - set(expected_keys))
 
-        # Make sure we are able to load base models as well as derived models (with heads)
+
         model_to_load = model
 
         def _find_mismatched_keys(
@@ -459,7 +459,7 @@ class ModelMixin(torch.nn.Module):
             return mismatched_keys
 
         if state_dict is not None:
-            # Whole checkpoint
+
             mismatched_keys = _find_mismatched_keys(
                 state_dict,
                 model_state_dict,
@@ -569,7 +569,7 @@ def unwrap_model(model: torch.nn.Module) -> torch.nn.Module:
     Args:
         model (`torch.nn.Module`): The model to unwrap.
     """
-    # since there could be multiple levels of wrapping, unwrap recursively
+
     if hasattr(model, "module"):
         return unwrap_model(model.module)
     else:

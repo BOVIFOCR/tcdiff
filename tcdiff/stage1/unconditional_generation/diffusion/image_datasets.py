@@ -2,8 +2,8 @@ import math
 import random
 
 from PIL import Image
-# import blobfile as bf
-# from mpi4py import MPI
+
+
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
 
@@ -41,8 +41,8 @@ def load_data(
     all_files = _list_image_files_recursively(data_dir)
     classes = None
     if class_cond:
-        # Assume classes are the first part of the filename,
-        # before an underscore.
+
+
         class_names = [bf.basename(path).split("_")[0] for path in all_files]
         sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
         classes = [sorted_classes[x] for x in class_names]
@@ -124,9 +124,9 @@ class ImageDataset(Dataset):
 
 
 def center_crop_arr(pil_image, image_size):
-    # We are not on a new enough PIL to support the `reducing_gap`
-    # argument, which uses BOX downsampling at powers of two first.
-    # Thus, we do it by hand to improve downsample quality.
+
+
+
     while min(*pil_image.size) >= 2 * image_size:
         pil_image = pil_image.resize(
             tuple(x // 2 for x in pil_image.size), resample=Image.BOX
@@ -148,9 +148,9 @@ def random_crop_arr(pil_image, image_size, min_crop_frac=0.8, max_crop_frac=1.0)
     max_smaller_dim_size = math.ceil(image_size / min_crop_frac)
     smaller_dim_size = random.randrange(min_smaller_dim_size, max_smaller_dim_size + 1)
 
-    # We are not on a new enough PIL to support the `reducing_gap`
-    # argument, which uses BOX downsampling at powers of two first.
-    # Thus, we do it by hand to improve downsample quality.
+
+
+
     while min(*pil_image.size) >= 2 * smaller_dim_size:
         pil_image = pil_image.resize(
             tuple(x // 2 for x in pil_image.size), resample=Image.BOX

@@ -81,10 +81,10 @@ class UNet2DModel(ModelMixin, ConfigMixin):
         self.sample_size = sample_size
         time_embed_dim = block_out_channels[0] * 4
 
-        # input
+
         self.conv_in = nn.Conv2d(in_channels, block_out_channels[0], kernel_size=3, padding=(1, 1))
 
-        # time
+
         if time_embedding_type == "fourier":
             self.time_proj = GaussianFourierProjection(embedding_size=block_out_channels[0], scale=16)
             timestep_input_dim = 2 * block_out_channels[0]
@@ -98,7 +98,7 @@ class UNet2DModel(ModelMixin, ConfigMixin):
         self.mid_block = None
         self.up_blocks = nn.ModuleList([])
 
-        # down
+
         output_channel = block_out_channels[0]
         for i, down_block_type in enumerate(down_block_types):
             input_channel = output_channel
@@ -120,7 +120,7 @@ class UNet2DModel(ModelMixin, ConfigMixin):
             )
             self.down_blocks.append(down_block)
 
-        # mid
+
         self.mid_block = UNetMidBlock2D(
             in_channels=block_out_channels[-1],
             temb_channels=time_embed_dim,
@@ -132,7 +132,7 @@ class UNet2DModel(ModelMixin, ConfigMixin):
             resnet_groups=norm_num_groups,
         )
 
-        # up
+
         reversed_block_out_channels = list(reversed(block_out_channels))
         output_channel = reversed_block_out_channels[0]
         for i, up_block_type in enumerate(up_block_types):
@@ -158,7 +158,7 @@ class UNet2DModel(ModelMixin, ConfigMixin):
             self.up_blocks.append(up_block)
             prev_output_channel = output_channel
 
-        # out
+
         num_groups_out = norm_num_groups if norm_num_groups is not None else min(block_out_channels[0] // 4, 32)
         self.conv_norm_out = nn.GroupNorm(num_channels=block_out_channels[0], num_groups=num_groups_out, eps=norm_eps)
         self.conv_act = nn.SiLU()
@@ -184,28 +184,28 @@ class UNet2DModel(ModelMixin, ConfigMixin):
         """
         assert encoder_hidden_states is None
 
-        # 0. center input if necessary
+
         if self.config.center_input_sample:
             sample = 2 * sample - 1.0
 
-        # 1. time
+
         timesteps = timestep
         if not torch.is_tensor(timesteps):
             timesteps = torch.tensor([timesteps], dtype=torch.long, device=sample.device)
         elif torch.is_tensor(timesteps) and len(timesteps.shape) == 0:
             timesteps = timesteps[None].to(sample.device)
 
-        # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
+
         timesteps = timesteps * torch.ones(sample.shape[0], dtype=timesteps.dtype, device=timesteps.device)
 
         t_emb = self.time_proj(timesteps)
         emb = self.time_embedding(t_emb)
 
-        # 2. pre-process
+
         skip_sample = sample
         sample = self.conv_in(sample)
 
-        # 3. down
+
         down_block_res_samples = (sample,)
         for downsample_block in self.down_blocks:
             if hasattr(downsample_block, "skip_conv"):
@@ -217,10 +217,10 @@ class UNet2DModel(ModelMixin, ConfigMixin):
 
             down_block_res_samples += res_samples
 
-        # 4. mid
+
         sample = self.mid_block(sample, emb)
 
-        # 5. up
+
         skip_sample = None
         for upsample_block in self.up_blocks:
             res_samples = down_block_res_samples[-len(upsample_block.resnets) :]
@@ -231,9 +231,9 @@ class UNet2DModel(ModelMixin, ConfigMixin):
             else:
                 sample = upsample_block(sample, res_samples, emb)
 
-        # 6. post-process
-        # make sure hidden states is in float32
-        # when running in half-precision
+
+
+
         sample = self.conv_norm_out(sample.float()).type(sample.dtype)
         sample = self.conv_act(sample)
         sample = self.conv_out(sample)

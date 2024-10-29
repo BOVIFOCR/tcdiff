@@ -130,7 +130,7 @@ def process_predictions(
         landmarks = decode_landm(land.data[batch_id], prior_box.to(land.device), variance)
         landmarks *= scale1
 
-        # ignore low scores
+
         valid_index = torch.where(scores > confidence_threshold)[0]
         boxes = boxes[valid_index]
         landmarks = landmarks[valid_index]
@@ -142,7 +142,7 @@ def process_predictions(
         landmarks = landmarks[order]
         scores = scores[order]
 
-        # do NMS
+
         keep = nms(boxes, scores, nms_threshold)
         boxes = boxes[keep, :].int()
 

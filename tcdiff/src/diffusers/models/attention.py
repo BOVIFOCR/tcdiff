@@ -42,7 +42,7 @@ class AttentionBlock(nn.Module):
         self.num_head_size = num_head_channels
         self.group_norm = nn.GroupNorm(num_channels=channels, num_groups=num_groups, eps=eps, affine=True)
 
-        # define q,k,v as linear layers
+
         self.query = nn.Linear(channels, channels)
         self.key = nn.Linear(channels, channels)
         self.value = nn.Linear(channels, channels)
@@ -52,7 +52,7 @@ class AttentionBlock(nn.Module):
 
     def transpose_for_scores(self, projection: torch.Tensor) -> torch.Tensor:
         new_projection_shape = projection.size()[:-1] + (self.num_heads, -1)
-        # move heads to 2nd position (B, T, H * D) -> (B, T, H, D) -> (B, H, T, D)
+
         new_projection = projection.view(new_projection_shape).permute(0, 2, 1, 3)
         return new_projection
 
@@ -60,39 +60,39 @@ class AttentionBlock(nn.Module):
         residual = hidden_states
         batch, channel, height, width = hidden_states.shape
 
-        # norm
+
         hidden_states = self.group_norm(hidden_states)
 
         hidden_states = hidden_states.view(batch, channel, height * width).transpose(1, 2)
 
-        # proj to q, k, v
+
         query_proj = self.query(hidden_states)
         key_proj = self.key(hidden_states)
         value_proj = self.value(hidden_states)
 
-        # transpose
+
         query_states = self.transpose_for_scores(query_proj)
         key_states = self.transpose_for_scores(key_proj)
         value_states = self.transpose_for_scores(value_proj)
 
-        # get scores
+
         scale = 1 / math.sqrt(math.sqrt(self.channels / self.num_heads))
 
         attention_scores = torch.matmul(query_states * scale, key_states.transpose(-1, -2) * scale)
         attention_probs = torch.softmax(attention_scores.float(), dim=-1).type(attention_scores.dtype)
 
-        # compute attention output
+
         hidden_states = torch.matmul(attention_probs, value_states)
 
         hidden_states = hidden_states.permute(0, 2, 1, 3).contiguous()
         new_hidden_states_shape = hidden_states.size()[:-2] + (self.channels,)
         hidden_states = hidden_states.view(new_hidden_states_shape)
 
-        # compute next hidden_states
+
         hidden_states = self.proj_attn(hidden_states)
         hidden_states = hidden_states.transpose(-1, -2).reshape(batch, channel, height, width)
 
-        # res connect and rescale
+
         hidden_states = (hidden_states + residual) / self.rescale_output_factor
         return hidden_states
 
@@ -144,7 +144,7 @@ class SpatialTransformer(nn.Module):
             block._set_attention_slice(slice_size)
 
     def forward(self, hidden_states, context=None):
-        # note: if no context is given, cross-attention defaults to self-attention
+
         batch, channel, height, weight = hidden_states.shape
         residual = hidden_states
         hidden_states = self.norm(hidden_states)
@@ -229,14 +229,14 @@ class CrossAttention(nn.Module):
         self.scale = dim_head**-0.5
         self.heads = heads
         self.dim_head = dim_head
-        # for slice_size > 0 the attention score computation
-        # is split across the batch axis to save memory
-        # You can set slice_size with `set_attention_slice`
+
+
+
         self._slice_size = None
         self.flash = None
         if not MEM_EFFICIENT_ATTN:
             try:
-                # Flash attention thanks to https://github.com/labmlai/annotated_deep_learning_paper_implementations/blob/master/labml_nn/diffusion/stable_diffusion/model/unet_attention.py#L192
+
                 from flash_attn.flash_attention import FlashAttention
                 self.flash = FlashAttention(softmax_scale=self.scale)
             except ImportError:
@@ -277,8 +277,8 @@ class CrossAttention(nn.Module):
             key = self.reshape_heads_to_batch_dim(key)
             value = self.reshape_heads_to_batch_dim(value)
 
-            # TODO(PVP) - mask is currently never used. Remember to re-implement when used
-            # attention, what we cannot get enough of
+
+
             if MEM_EFFICIENT_ATTN:
                 hidden_states = xformers.ops.memory_efficient_attention(query, key, value)
             elif self._slice_size is None or query.shape[0] // self._slice_size == 1:
@@ -292,12 +292,12 @@ class CrossAttention(nn.Module):
 
     def _flash_attention(self, q, k, v):
         batch_size, seq_len, _ = q.shape
-        # Stack `q`, `k`, `v` vectors for flash attention
+
         qkv = torch.stack((q, k, v), dim=2)
-        # Split the heads
+
         qkv = qkv.view(batch_size, seq_len, 3, self.heads, self.dim_head)
 
-        # Flash attention works for head sizes `32`, `64` and `128`, so we have to pad the heads to fit this size.
+
         if self.dim_head <= 32:
             pad = 32 - self.dim_head
         elif self.dim_head <= 64:
@@ -307,23 +307,23 @@ class CrossAttention(nn.Module):
         else:
             raise ValueError(f'Head size ${self.dim_head} too large for Flash Attention')
 
-        # Pad the heads
+
         if pad:
             qkv = torch.cat((qkv, qkv.new_zeros(batch_size, seq_len, 3, self.heads, pad)), dim=-1)
 
-        # Compute attention
-        # This gives a tensor of shape `[batch_size, seq_len, heads, d_padded]`
+
+
         out, _ = self.flash(qkv)
-        # Truncate the extra head size
+
         out = out[:, :, :, :self.dim_head]
-        # Reshape to `[batch_size, seq_len, heads * dim_head]`
+
         out = out.reshape(batch_size, seq_len, self.heads * self.dim_head)
         return out
 
     def _attention(self, query, key, value):
         attention_scores = torch.matmul(query, key.transpose(-1, -2)) * self.scale
         attention_probs = attention_scores.softmax(dim=-1)
-        # compute attention output
+
         hidden_states = torch.matmul(attention_probs, value)
         return hidden_states
 
@@ -371,7 +371,7 @@ class FeedForward(nn.Module):
         return self.net(hidden_states)
 
 
-# feedforward
+
 class GEGLU(nn.Module):
     r"""
     A variant of the gated linear unit activation function from https://arxiv.org/abs/2002.05202.

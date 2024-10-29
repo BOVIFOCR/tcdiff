@@ -77,7 +77,7 @@ class MultiBoxLoss(nn.Module):
         num_predicted_boxes = locations_data.size(0)
         num_priors = priors.size(0)
 
-        # match priors (default boxes) and ground truth boxes
+
         boxes_t = torch.zeros(num_predicted_boxes, num_priors, 4).to(targets[0].device)
         landmarks_t = torch.zeros(num_predicted_boxes, num_priors, 10).to(targets[0].device)
         conf_t = torch.zeros(num_predicted_boxes, num_priors).to(targets[0].device).long()
@@ -100,7 +100,7 @@ class MultiBoxLoss(nn.Module):
                 box_index,
             )
 
-        # landmark Loss (Smooth L1) Shape: [batch, num_priors, 10]
+
         positive_1 = conf_t > torch.zeros_like(conf_t)
         num_positive_landmarks = positive_1.long().sum(1, keepdim=True)
         n1 = max(num_positive_landmarks.data.sum().float(), 1)  # type: ignore
@@ -112,17 +112,17 @@ class MultiBoxLoss(nn.Module):
         positive = conf_t != torch.zeros_like(conf_t)
         conf_t[positive] = 1
 
-        # Localization Loss (Smooth L1) Shape: [batch, num_priors, 4]
+
         pos_idx = positive.unsqueeze(positive.dim()).expand_as(locations_data)
         loc_p = locations_data[pos_idx].view(-1, 4)
         boxes_t = boxes_t[pos_idx].view(-1, 4)
         loss_l = F.smooth_l1_loss(loc_p, boxes_t, reduction="sum")
 
-        # Compute max conf across batch for hard negative mining
+
         batch_conf = confidence_data.view(-1, self.num_classes)
         loss_c = log_sum_exp(batch_conf) - batch_conf.gather(1, conf_t.view(-1, 1))
 
-        # Hard Negative Mining
+
         loss_c[positive.view(-1, 1)] = 0  # filter out positive boxes for now
         loss_c = loss_c.view(num_predicted_boxes, -1)
         _, loss_idx = loss_c.sort(1, descending=True)
@@ -131,14 +131,14 @@ class MultiBoxLoss(nn.Module):
         num_neg = torch.clamp(self.negpos_ratio * num_pos, max=positive.size(1) - 1)
         neg = idx_rank < num_neg.expand_as(idx_rank)
 
-        # Confidence Loss Including Positive and Negative Examples
+
         pos_idx = positive.unsqueeze(2).expand_as(confidence_data)
         neg_idx = neg.unsqueeze(2).expand_as(confidence_data)
         conf_p = confidence_data[(pos_idx + neg_idx).gt(0)].view(-1, self.num_classes)
         targets_weighted = conf_t[(positive + neg).gt(0)]
         loss_c = F.cross_entropy(conf_p, targets_weighted, reduction="sum")
 
-        # Sum of losses: L(x,c,l,g) = (Lconf(x, c) + αLloc(x,l,g)) / N
+
         n = max(num_pos.data.sum().float(), 1)  # type: ignore
 
         return loss_l / n, loss_c / n, loss_landm / n1

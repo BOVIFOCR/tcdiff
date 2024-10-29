@@ -6,9 +6,9 @@ import time
 
 class CUDACallback(Callback):
 
-    # see https://github.com/SeanNaren/minGPT/blob/master/mingpt/callback.py
+
     def on_train_epoch_start(self, trainer, pl_module):
-        # Reset the memory use counter
+
         if hasattr(trainer, 'root_gpu'):
             torch.cuda.reset_peak_memory_stats(trainer.root_gpu)
             torch.cuda.synchronize(trainer.root_gpu)

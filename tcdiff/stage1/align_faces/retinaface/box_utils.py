@@ -109,13 +109,13 @@ def match(
     Return:
         The matched indices corresponding to 1)location 2)confidence 3)landmarks preds.
     """
-    # Compute iou between gt and priors
+
     overlaps = jaccard(box_gt, point_form(priors))
-    # (Bipartite Matching)
-    # [1, num_objects] best prior for each ground truth
+
+
     best_prior_overlap, best_prior_idx = overlaps.max(1, keepdim=True)
 
-    # ignore hard gt
+
     valid_gt_idx = best_prior_overlap[:, 0] >= 0.2
     best_prior_idx_filter = best_prior_idx[valid_gt_idx, :]
     if best_prior_idx_filter.shape[0] <= 0:
@@ -123,7 +123,7 @@ def match(
         label_t[batch_id] = 0
         return
 
-    # [1, num_priors] best ground truth for each prior
+
     best_truth_overlap, best_truth_idx = overlaps.max(0, keepdim=True)
     best_truth_idx.squeeze_(0)
     best_truth_overlap.squeeze_(0)
@@ -132,7 +132,7 @@ def match(
     best_prior_overlap.squeeze_(1)
     best_truth_overlap.index_fill_(0, best_prior_idx_filter, 2)  # ensure best prior
 
-    # ensure every gt matches with its prior of max overlap
+
     for j in range(best_prior_idx.size(0)):  # 判别此anchor是预测哪一个boxes
         best_truth_idx[best_prior_idx[j]] = j
 
@@ -161,14 +161,14 @@ def encode(matched: torch.Tensor, priors: torch.Tensor, variances: List[float]) 
     Return:
         encoded boxes, Shape: [num_priors, 4]
     """
-    # dist b/t match center and prior's center
+
     g_cxcy = (matched[:, :2] + matched[:, 2:]) / 2 - priors[:, :2]
-    # encode variance
+
     g_cxcy /= variances[0] * priors[:, 2:]
-    # match wh / prior wh
+
     g_wh = (matched[:, 2:] - matched[:, :2]) / priors[:, 2:]
     g_wh = torch.log(g_wh) / variances[1]
-    # return target for smooth_l1_loss
+
     return torch.cat([g_cxcy, g_wh], 1)  # [num_priors,4]
 
 
@@ -187,7 +187,7 @@ def encode_landm(
     Return:
         encoded landmarks, Shape: [num_priors, 10]
     """
-    # dist b/t match center and prior's center
+
     matched = torch.reshape(matched, (matched.size(0), 5, 2))
     priors_cx = priors[:, 0].unsqueeze(1).expand(matched.size(0), 5).unsqueeze(2)
     priors_cy = priors[:, 1].unsqueeze(1).expand(matched.size(0), 5).unsqueeze(2)
@@ -195,13 +195,13 @@ def encode_landm(
     priors_h = priors[:, 3].unsqueeze(1).expand(matched.size(0), 5).unsqueeze(2)
     priors = torch.cat([priors_cx, priors_cy, priors_w, priors_h], dim=2)
     g_cxcy = matched[:, :, :2] - priors[:, :, :2]
-    # encode variance
+
     g_cxcy /= variances[0] * priors[:, :, 2:]
-    # return target for smooth_l1_loss
+
     return g_cxcy.reshape(g_cxcy.size(0), -1)
 
 
-# Adapted from https://github.com/Hakuyume/chainer-ssd
+
 def decode(
     loc: torch.Tensor, priors: torch.Tensor, variances: Union[List[float], Tuple[float, float]]
 ) -> torch.Tensor:

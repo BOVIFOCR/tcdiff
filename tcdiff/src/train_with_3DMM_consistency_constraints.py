@@ -10,10 +10,8 @@ root = pyrootutils.setup_root(
     dotenv=True,
 )
 dotenv.load_dotenv(dotenv_path=root.parent.parent / '.env', override=True)
-# dotenv.load_dotenv(dotenv_path=root.parent.parent / '.env_with_3DMM_consistency_constraints', override=True)
 
-os.environ["DATA_ROOT"] = os.path.join(root, 'data')                                         # original
-# os.environ["DATA_ROOT"] = '/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace'   # Bernardo
+os.environ["DATA_ROOT"] = os.path.join(root, 'data')
 
 os.environ["HYDRA_FULL_ERROR"] = '1'
 
@@ -21,8 +19,7 @@ assert os.getenv('DATA_ROOT')
 assert os.path.isdir(os.getenv('DATA_ROOT'))
 import time
 
-# LOG_ROOT = str(root.parent / 'experiments')                                   # original
-LOG_ROOT = str(root.parent / 'experiments_WITH_3DMM_CONSISTENCY_CONSTRAINTS')   # Bernardo
+LOG_ROOT = str(root.parent / 'experiments_WITH_3DMM_CONSISTENCY_CONSTRAINTS')
 os.environ.update({'LOG_ROOT': LOG_ROOT})
 os.environ.update({'PROJECT_TASK': root.stem})
 os.environ.update({'REPO_ROOT': str(root.parent)})
@@ -53,7 +50,7 @@ def train_with_3DMM_consistency_constraints(cfg: DictConfig) -> Tuple[dict, dict
         Tuple[dict, dict]: Dict with metrics and dict with all instantiated objects.
     """
 
-    # set seed for random number generators in pytorch, numpy and python.random
+
     if cfg.get("seed"):
         pl.seed_everything(cfg.seed, workers=True)
 
@@ -117,17 +114,16 @@ def train_with_3DMM_consistency_constraints(cfg: DictConfig) -> Tuple[dict, dict
 
     test_metrics = trainer.callback_metrics
 
-    # merge train and test metrics
+
     metric_dict = {**train_metrics, **test_metrics}
 
     return metric_dict, object_dict
 
 
-# @hydra.main(version_base="1.2", config_path=root / "src/configs", config_name="train.yaml")
 @hydra.main(version_base="1.2", config_path=root / "src/configs", config_name="train_with_3DMM_consistency_constraints.yaml")
 def main_with_3DMM_consistency_constraints(cfg: DictConfig) -> Optional[float]:
 
-    # fix hydra path
+
     print(f"tmp directory : {cfg.paths.output_dir}")
     if 'experiments' in cfg.paths.output_dir:
         print(f"removing tmp directory : {cfg.paths.output_dir}")
@@ -151,7 +147,7 @@ def main_with_3DMM_consistency_constraints(cfg: DictConfig) -> Optional[float]:
 
     cfg = option_parsing.post_process(cfg)
 
-    # train the model
+
     metric_dict, _ = train_with_3DMM_consistency_constraints(cfg)
     print(metric_dict)
 

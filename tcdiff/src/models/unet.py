@@ -46,7 +46,7 @@ class BaseOutput(OrderedDict):
     def __post_init__(self):
         class_fields = fields(self)
 
-        # Safety and consistency checks
+
         if not len(class_fields):
             raise ValueError(f"{self.__class__.__name__} has no fields.")
 
@@ -90,14 +90,14 @@ class BaseOutput(OrderedDict):
 
     def __setattr__(self, name, value):
         if name in self.keys() and value is not None:
-            # Don't call self.__setitem__ to avoid recursion errors
+
             super().__setitem__(name, value)
         super().__setattr__(name, value)
 
     def __setitem__(self, key, value):
-        # Will raise a KeyException if needed
+
         super().__setitem__(key, value)
-        # Don't call self.__setattr__ to avoid recursion errors
+
         super().__setattr__(key, value)
 
     def to_tuple(self) -> Tuple[Any]:
@@ -389,16 +389,16 @@ class AttentionBlock(nn.Module):
         self.norm = normalization(channels)
         self.qkv = conv_nd(1, channels, channels * 3, 1)
         if use_new_attention_order:
-            # split qkv before split heads
+
             self.attention = QKVAttention(self.num_heads)
         else:
-            # split heads before split qkv
+
             self.attention = QKVAttentionLegacy(self.num_heads)
 
-        # if encoder_channels is not None:
-        #     self.encoder_kv = conv_nd(1, encoder_channels, channels * 2, 1)
-        # else:
-        #     self.encoder_kv = None
+
+
+
+
         self.proj_out = zero_module(conv_nd(1, channels, channels, 1))
 
     def forward(self, x, cross_attn=None):
@@ -412,8 +412,8 @@ class AttentionBlock(nn.Module):
         x = x.reshape(b, c, -1)
         qkv = self.qkv(self.norm(x))
         if cross_attn is not None:
-            # if self.encoder_kv is not None:
-            #     cross_attn = self.encoder_kv(cross_attn)
+
+
             h = self.attention(qkv, cross_attn)
         else:
             h = self.attention(qkv)
@@ -435,9 +435,9 @@ def count_flops_attn(model, _x, y):
     """
     b, c, *spatial = y[0].shape
     num_spatial = int(np.prod(spatial))
-    # We perform two matmuls with the same number of ops.
-    # The first computes the weight matrix, the second computes
-    # the combination of the value vectors.
+
+
+
     matmul_ops = 2 * b * (num_spatial ** 2) * c
     model.total_ops += th.DoubleTensor([matmul_ops])
 
@@ -811,19 +811,19 @@ class UNetModel(nn.Module):
             stylemod = None
 
         h = x.type(self.dtype)
-        # print(h.shape)
+
         for module in self.input_blocks:
             h = module(h, emb, cross_attn=cross_attn, stylemod=stylemod)
-            # print(h.shape)
+
             hs.append(h)
         h = self.middle_block(h, emb, cross_attn=cross_attn, stylemod=stylemod)
-        # print(h.shape)
+
         for module in self.output_blocks:
             h = th.cat([h, hs.pop()], dim=1)
-            # print(h.shape)
+
             h = module(h, emb, cross_attn=cross_attn, stylemod=stylemod)
         h = h.type(x.dtype)
-        # return self.out(h)
+
         out = self.out(h)
         sample, variance = torch.split(out, 3, dim=1)
         return UNet2DOutput(sample=sample, variance=variance)
@@ -840,7 +840,7 @@ def get_parameter_device(parameter: torch.nn.Module):
     try:
         return next(parameter.parameters()).device
     except StopIteration:
-        # For torch.nn.DataParallel compatibility in PyTorch 1.5
+
 
         def find_tensor_attributes(module: torch.nn.Module) -> List[Tuple[str, Tensor]]:
             tuples = [(k, v) for k, v in module.__dict__.items() if torch.is_tensor(v)]

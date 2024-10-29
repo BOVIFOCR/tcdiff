@@ -50,8 +50,8 @@ class FlaxStableDiffusionSafetyCheckerModule(nn.Module):
         for i in range(batch_size):
             result_img = {"special_scores": {}, "special_care": [], "concept_scores": {}, "bad_concepts": []}
 
-            # increase this value to create a stronger `nfsw` filter
-            # at the cost of increasing the possibility of filtering benign image inputs
+
+
             adjustment = 0.0
 
             for concept_idx in range(len(special_cos_dist[0])):
@@ -111,7 +111,7 @@ class FlaxStableDiffusionSafetyChecker(FlaxPreTrainedModel):
         super().__init__(config, module, input_shape=input_shape, seed=seed, dtype=dtype, _do_init=_do_init)
 
     def init_weights(self, rng: jax.random.PRNGKey, input_shape: Tuple, params: FrozenDict = None) -> FrozenDict:
-        # init input tensor
+
         clip_input = jax.random.normal(rng, input_shape)
 
         params_rng, dropout_rng = jax.random.split(rng)

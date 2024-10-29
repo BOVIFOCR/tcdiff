@@ -41,8 +41,8 @@ class FlaxDownsample2D(nn.Module):
         )
 
     def __call__(self, hidden_states):
-        # pad = ((0, 0), (0, 1), (0, 1), (0, 0))  # pad height and width dim
-        # hidden_states = jnp.pad(hidden_states, pad_width=pad)
+
+
         hidden_states = self.conv(hidden_states)
         return hidden_states
 

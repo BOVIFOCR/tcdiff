@@ -20,7 +20,7 @@ def priorbox(min_sizes: List[List[int]], steps: List[int], clip: bool, image_siz
                 for cy, cx in product(dense_cy, dense_cx):
                     anchors += [cx, cy, s_kx, s_ky]
 
-    # back to torch land
+
     output = torch.Tensor(anchors).view(-1, 4)
     if clip:
         output.clamp_(max=1, min=0)

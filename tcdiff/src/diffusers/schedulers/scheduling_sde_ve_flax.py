@@ -1,18 +1,18 @@
-# Copyright 2022 Google Brain and The HuggingFace Team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
-# DISCLAIMER: This file is strongly influenced by https://github.com/yang-song/score_sde_pytorch
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 from dataclasses import dataclass
 from typing import Optional, Tuple, Union
@@ -27,7 +27,7 @@ from .scheduling_utils import SchedulerMixin, SchedulerOutput
 
 @flax.struct.dataclass
 class ScoreSdeVeSchedulerState:
-    # setable values
+
     timesteps: Optional[jnp.ndarray] = None
     discrete_sigmas: Optional[jnp.ndarray] = None
     sigmas: Optional[jnp.ndarray] = None
@@ -190,18 +190,18 @@ class FlaxScoreSdeVeScheduler(SchedulerMixin, ConfigMixin):
         drift = jnp.zeros_like(sample)
         diffusion = (sigma**2 - adjacent_sigma**2) ** 0.5
 
-        # equation 6 in the paper: the model_output modeled by the network is grad_x log pt(x)
-        # also equation 47 shows the analog from SDE models to ancestral sampling methods
+
+
         diffusion = diffusion.flatten()
         while len(diffusion.shape) < len(sample.shape):
             diffusion = diffusion[:, None]
         drift = drift - diffusion**2 * model_output
 
-        #  equation 6: sample noise for the diffusion term of
+
         key = random.split(key, num=1)
         noise = random.normal(key=key, shape=sample.shape)
         prev_sample_mean = sample - drift  # subtract because `dt` is a small negative timestep
-        # TODO is the variable diffusion the correct scaling term for the noise?
+
         prev_sample = prev_sample_mean + diffusion * noise  # add impact of diffusion field g
 
         if not return_dict:
@@ -239,18 +239,18 @@ class FlaxScoreSdeVeScheduler(SchedulerMixin, ConfigMixin):
                 "`state.timesteps` is not set, you need to run 'set_timesteps' after creating the scheduler"
             )
 
-        # For small batch sizes, the paper "suggest replacing norm(z) with sqrt(d), where d is the dim. of z"
-        # sample noise for correction
+
+
         key = random.split(key, num=1)
         noise = random.normal(key=key, shape=sample.shape)
 
-        # compute step size from the model_output, the noise, and the snr
+
         grad_norm = jnp.linalg.norm(model_output)
         noise_norm = jnp.linalg.norm(noise)
         step_size = (self.config.snr * noise_norm / grad_norm) ** 2 * 2
         step_size = step_size * jnp.ones(sample.shape[0])
 
-        # compute corrected sample: model_output term and noise term
+
         step_size = step_size.flatten()
         while len(step_size.shape) < len(sample.shape):
             step_size = step_size[:, None]

@@ -1,16 +1,16 @@
-# Copyright 2022 The HuggingFace Team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import flax.linen as nn
 import jax.numpy as jnp
@@ -43,7 +43,7 @@ class FlaxAttentionBlock(nn.Module):
         inner_dim = self.dim_head * self.heads
         self.scale = self.dim_head**-0.5
 
-        # Weights were exported with old names {to_q, to_k, to_v, to_out}
+
         self.query = nn.Dense(inner_dim, use_bias=False, dtype=self.dtype, name="to_q")
         self.key = nn.Dense(inner_dim, use_bias=False, dtype=self.dtype, name="to_k")
         self.value = nn.Dense(inner_dim, use_bias=False, dtype=self.dtype, name="to_v")
@@ -77,12 +77,12 @@ class FlaxAttentionBlock(nn.Module):
         key_states = self.reshape_heads_to_batch_dim(key_proj)
         value_states = self.reshape_heads_to_batch_dim(value_proj)
 
-        # compute attentions
+
         attention_scores = jnp.einsum("b i d, b j d->b i j", query_states, key_states)
         attention_scores = attention_scores * self.scale
         attention_probs = nn.softmax(attention_scores, axis=2)
 
-        # attend to values
+
         hidden_states = jnp.einsum("b i j, b j d -> b i d", attention_probs, value_states)
         hidden_states = self.reshape_batch_dim_to_heads(hidden_states)
         hidden_states = self.proj_attn(hidden_states)
@@ -114,9 +114,9 @@ class FlaxBasicTransformerBlock(nn.Module):
     dtype: jnp.dtype = jnp.float32
 
     def setup(self):
-        # self attention
+
         self.attn1 = FlaxAttentionBlock(self.dim, self.n_heads, self.d_head, self.dropout, dtype=self.dtype)
-        # cross attention
+
         self.attn2 = FlaxAttentionBlock(self.dim, self.n_heads, self.d_head, self.dropout, dtype=self.dtype)
         self.ff = FlaxGluFeedForward(dim=self.dim, dropout=self.dropout, dtype=self.dtype)
         self.norm1 = nn.LayerNorm(epsilon=1e-5, dtype=self.dtype)
@@ -124,17 +124,17 @@ class FlaxBasicTransformerBlock(nn.Module):
         self.norm3 = nn.LayerNorm(epsilon=1e-5, dtype=self.dtype)
 
     def __call__(self, hidden_states, context, deterministic=True):
-        # self attention
+
         residual = hidden_states
         hidden_states = self.attn1(self.norm1(hidden_states), deterministic=deterministic)
         hidden_states = hidden_states + residual
 
-        # cross attention
+
         residual = hidden_states
         hidden_states = self.attn2(self.norm2(hidden_states), context, deterministic=deterministic)
         hidden_states = hidden_states + residual
 
-        # feed forward
+
         residual = hidden_states
         hidden_states = self.ff(self.norm3(hidden_states), deterministic=deterministic)
         hidden_states = hidden_states + residual
@@ -231,8 +231,8 @@ class FlaxGluFeedForward(nn.Module):
     dtype: jnp.dtype = jnp.float32
 
     def setup(self):
-        # The second linear layer needs to be called
-        # net_2 for now to match the index of the Sequential layer
+
+
         self.net_0 = FlaxGEGLU(self.dim, self.dropout, self.dtype)
         self.net_2 = nn.Dense(self.dim, dtype=self.dtype)
 

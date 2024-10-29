@@ -29,7 +29,7 @@ class Logger():
 
     def initiate(self, file_path, columns, overwrite):
         if not os.path.isfile(file_path) or overwrite:
-            # no previous file exists or overwrite is on. Then create a new file
+
             with open(file_path, 'w') as f:
                 f.write(self.make_row(columns))
         else:
@@ -41,7 +41,7 @@ class Logger():
             return []
         with open(self.file_path, 'r') as f:
             data = f.readlines()
-            # first row is a column name
+
             column = [self.split_row(row)[col_index] for row in data[1:]]
             col_name = self.split_row(data[0])[col_index]
             return column, col_name

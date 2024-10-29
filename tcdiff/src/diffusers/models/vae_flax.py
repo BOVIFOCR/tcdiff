@@ -1,4 +1,4 @@
-# JAX implementation of VQGAN from taming-transformers https://github.com/CompVis/taming-transformers
+
 
 import math
 from functools import partial
@@ -210,9 +210,9 @@ class FlaxAttentionBlock(nn.Module):
 
     def transpose_for_scores(self, projection):
         new_projection_shape = projection.shape[:-1] + (self.num_heads, -1)
-        # move heads to 2nd position (B, T, H * D) -> (B, T, H, D)
+
         new_projection = projection.reshape(new_projection_shape)
-        # (B, T, H, D) -> (B, H, T, D)
+
         new_projection = jnp.transpose(new_projection, (0, 2, 1, 3))
         return new_projection
 
@@ -228,17 +228,17 @@ class FlaxAttentionBlock(nn.Module):
         key = self.key(hidden_states)
         value = self.value(hidden_states)
 
-        # transpose
+
         query = self.transpose_for_scores(query)
         key = self.transpose_for_scores(key)
         value = self.transpose_for_scores(value)
 
-        # compute attentions
+
         scale = 1 / math.sqrt(math.sqrt(self.channels / self.num_heads))
         attn_weights = jnp.einsum("...qc,...kc->...qk", query * scale, key * scale)
         attn_weights = nn.softmax(attn_weights, axis=-1)
 
-        # attend to values
+
         hidden_states = jnp.einsum("...kc,...qk->...qc", value, attn_weights)
 
         hidden_states = jnp.transpose(hidden_states, (0, 2, 1, 3))
@@ -378,7 +378,7 @@ class FlaxUNetMidBlock2D(nn.Module):
     dtype: jnp.dtype = jnp.float32
 
     def setup(self):
-        # there is always at least one resnet
+
         resnets = [
             FlaxResnetBlock2D(
                 in_channels=self.in_channels,
@@ -462,7 +462,7 @@ class FlaxEncoder(nn.Module):
 
     def setup(self):
         block_out_channels = self.block_out_channels
-        # in
+
         self.conv_in = nn.Conv(
             block_out_channels[0],
             kernel_size=(3, 3),
@@ -471,7 +471,7 @@ class FlaxEncoder(nn.Module):
             dtype=self.dtype,
         )
 
-        # downsampling
+
         down_blocks = []
         output_channel = block_out_channels[0]
         for i, _ in enumerate(self.down_block_types):
@@ -489,12 +489,12 @@ class FlaxEncoder(nn.Module):
             down_blocks.append(down_block)
         self.down_blocks = down_blocks
 
-        # middle
+
         self.mid_block = FlaxUNetMidBlock2D(
             in_channels=block_out_channels[-1], attn_num_head_channels=None, dtype=self.dtype
         )
 
-        # end
+
         conv_out_channels = 2 * self.out_channels if self.double_z else self.out_channels
         self.conv_norm_out = nn.GroupNorm(num_groups=32, epsilon=1e-6)
         self.conv_out = nn.Conv(
@@ -506,17 +506,17 @@ class FlaxEncoder(nn.Module):
         )
 
     def __call__(self, sample, deterministic: bool = True):
-        # in
+
         sample = self.conv_in(sample)
 
-        # downsampling
+
         for block in self.down_blocks:
             sample = block(sample, deterministic=deterministic)
 
-        # middle
+
         sample = self.mid_block(sample, deterministic=deterministic)
 
-        # end
+
         sample = self.conv_norm_out(sample)
         sample = nn.swish(sample)
         sample = self.conv_out(sample)
@@ -570,7 +570,7 @@ class FlaxDecoder(nn.Module):
     def setup(self):
         block_out_channels = self.block_out_channels
 
-        # z to block_in
+
         self.conv_in = nn.Conv(
             block_out_channels[-1],
             kernel_size=(3, 3),
@@ -579,12 +579,12 @@ class FlaxDecoder(nn.Module):
             dtype=self.dtype,
         )
 
-        # middle
+
         self.mid_block = FlaxUNetMidBlock2D(
             in_channels=block_out_channels[-1], attn_num_head_channels=None, dtype=self.dtype
         )
 
-        # upsampling
+
         reversed_block_out_channels = list(reversed(block_out_channels))
         output_channel = reversed_block_out_channels[0]
         up_blocks = []
@@ -606,7 +606,7 @@ class FlaxDecoder(nn.Module):
 
         self.up_blocks = up_blocks
 
-        # end
+
         self.conv_norm_out = nn.GroupNorm(num_groups=32, epsilon=1e-6)
         self.conv_out = nn.Conv(
             self.out_channels,
@@ -617,13 +617,13 @@ class FlaxDecoder(nn.Module):
         )
 
     def __call__(self, sample, deterministic: bool = True):
-        # z to block_in
+
         sample = self.conv_in(sample)
 
-        # middle
+
         sample = self.mid_block(sample, deterministic=deterministic)
 
-        # upsampling
+
         for block in self.up_blocks:
             sample = block(sample, deterministic=deterministic)
 
@@ -636,7 +636,7 @@ class FlaxDecoder(nn.Module):
 
 class FlaxDiagonalGaussianDistribution(object):
     def __init__(self, parameters, deterministic=False):
-        # Last axis to account for channels-last
+
         self.mean, self.logvar = jnp.split(parameters, 2, axis=-1)
         self.logvar = jnp.clip(self.logvar, -30.0, 20.0)
         self.deterministic = deterministic
@@ -761,7 +761,7 @@ class FlaxAutoencoderKL(nn.Module, FlaxModelMixin, ConfigMixin):
         )
 
     def init_weights(self, rng: jax.random.PRNGKey) -> FrozenDict:
-        # init input tensors
+
         sample_shape = (1, self.in_channels, self.sample_size, self.sample_size)
         sample = jnp.zeros(sample_shape, dtype=jnp.float32)
 

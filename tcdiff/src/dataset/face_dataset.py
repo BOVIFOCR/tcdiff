@@ -35,7 +35,7 @@ def read_list(path_in):
                 break
             line = [i.strip() for i in line.strip().split('\t')]
             line_len = len(line)
-            # check the data format of .lst file
+
             assert line_len == 3
             item = {'idx': int(line[0]), "path": line[2], 'label': float(line[1])}
             yield item
@@ -52,8 +52,8 @@ class BaseMXDataset(Dataset):
 
         self.record = mx.recordio.MXIndexedRecordIO(path_imgidx, path_imgrec, 'r')
 
-        # grad image index from the record and know how many images there are.
-        # image index could be occasionally random order. like [4,3,1,2,0]
+
+
         s = self.record.read_idx(0)
         header, _ = mx.recordio.unpack(s)
         if header.flag > 0:
@@ -73,7 +73,7 @@ class BaseMXDataset(Dataset):
             self.insightface_trainrec = False
         else:
             self.insightface_trainrec = True
-            # make one yourself
+
             record_info = []
             for idx in self.imgidx:
                 s = self.record.read_idx(idx)
@@ -102,7 +102,7 @@ class BaseMXDataset(Dataset):
             sample = cv2.resize(sample, (self.resolution, self.resolution))
 
         if self.swap_color_order:
-            # swap rgb to bgr since image is in rgb for webface
+
             sample = Image.fromarray(np.asarray(sample)[:, :, ::-1])
         else:
             assert not 'webface4m' in self.root_dir.lower()
@@ -114,7 +114,7 @@ class BaseMXDataset(Dataset):
         raise NotImplementedError()
 
     def __len__(self):
-        # return len(self.imgidx)
+
         raise NotImplementedError()
 
 
@@ -126,27 +126,27 @@ class LabelConvertedMXFaceDataset(BaseMXDataset):
                  rec_label_to_another_label=None,
                  resolution=112
                  ):
-        # rec_label_to_another_label: dictionary converting record label to another label like torch ImageFolderLabel
+
         super(LabelConvertedMXFaceDataset, self).__init__(root_dir=root_dir,
                                                           swap_color_order=swap_color_order,
                                                           resolution=resolution)
         if rec_label_to_another_label is None:
-            # make one using path
-            # image folder with 0/1.jpg
 
-            # from record file label to folder name
+
+
+
             rec_label = self.record_info.label.tolist()
             foldernames = self.record_info.path.apply(lambda x: x.split('/')[0]).tolist()
             self.rec_to_folder = {}
             for i, j in zip(rec_label, foldernames):
                 self.rec_to_folder[i] = j
 
-            # from folder name to number as torch imagefolder
+
             foldernames = sorted(str(entry) for entry in self.rec_to_folder.values())
             self.folder_to_num = {cls_name: i for i, cls_name in enumerate(foldernames)}
             self.rec_label_to_another_label = {}
 
-            # combine all
+
             for x in rec_label:
                 self.rec_label_to_another_label[x] = self.folder_to_num[self.rec_to_folder[x]]
 
@@ -185,7 +185,7 @@ class FaceMXDataset(LabelConvertedMXFaceDataset):
                                             rec_label_to_another_label=rec_label_to_another_label,
                                             resolution=resolution)
         if isinstance(transform, list):
-            # split transform for returning both 112x112 and 128x128
+
             transform_random1, transform_random2, transform_determ1, transform_determ2 = transform
             self.transform_random1 = transform_random1
             self.transform_random2 = transform_random2
@@ -259,7 +259,7 @@ class FaceMXDataset(LabelConvertedMXFaceDataset):
                 sample = self.transform_random1(sample)
             sample1 = self.transform_determ1(sample)
 
-            # sample2 is usually original shape
+
             if self.deterministic:
                 sample2 = sample
             else:
@@ -285,7 +285,7 @@ class FaceMXDataset(LabelConvertedMXFaceDataset):
             is_inlier = cossim_to_center > outlier_threshold
             is_inlier = is_inlier.sample(1).item()
             if not is_inlier:
-                # resample
+
                 index = target_df[(target_df['cossim'] > outlier_threshold) &
                                   (target_df['data_index'] > self.start_index) &
                                   (target_df['data_index'] < (self.start_index + len(self)))].sample().data_index.item()
@@ -368,7 +368,7 @@ class ListDatasetWithIndex(Dataset):
         self.image_is_saved_with_swapped_B_and_R = image_is_saved_with_swapped_B_and_R
 
         if isinstance(transform, list):
-            # split transform for returning both 112x112 and 128x128
+
             transform_random1, transform_random2, transform_determ1, transform_determ2 = transform
             self.transform_random1 = transform_random1
             self.transform_random2 = transform_random2
@@ -399,7 +399,7 @@ class ListDatasetWithIndex(Dataset):
                 sample = self.transform_random1(sample)
             sample1 = self.transform_determ1(sample)
 
-            # sample2 is usually original shape
+
             if self.deterministic:
                 sample2 = sample
             else:

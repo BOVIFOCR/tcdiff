@@ -1,5 +1,5 @@
-# based on:
-# https://github.com/ZhaoJ9014/face.evoLVe.PyTorch/blob/master/backbone/model_irse.py
+
+
 from collections import namedtuple
 from torch.nn import Linear
 from torch.nn import Conv2d
@@ -314,8 +314,8 @@ class Backbone(Module):
 
     def forward(self, x, return_intermediate=False, return_style=[], return_spatial=[]):
 
-        # current code only supports one extra image
-        # it comes with a extra dimension for number of extra image. We will just squeeze it out for now
+
+
         x = self.input_layer(x)
         styles = []
         spatials = []
@@ -435,7 +435,7 @@ def IR_SE_200(input_size):
     return model
 
 
-############# mobilenet
+
 
 class Conv_block(Module):
     """ Convolution block with no-linear activation layer

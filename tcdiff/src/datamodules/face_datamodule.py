@@ -14,8 +14,8 @@ class FaceDataModule(LightningDataModule):
     ):
         super().__init__()
 
-        # this line allows to access init params with 'self.hparams' attribute
-        # also ensures init params will be stored in ckpt
+
+
         self.save_hyperparameters(logger=False)
 
         self.data_train: Optional[Dataset] = None
@@ -32,7 +32,7 @@ class FaceDataModule(LightningDataModule):
             encoded_dataset.maybe_make_train_rec(image_dataset_path, self.hparams, self.trainer.model)
 
     def setup(self, stage: Optional[str] = None):
-        # load and split datasets only if not loaded already
+
         if not self.data_train and not self.data_val and not self.data_test:
             dataset_path = os.path.join(self.hparams.data_dir, self.hparams.dataset_name)
             encoded_rec = encoded_dataset.maybe_load_train_rec(dataset_path, self.hparams)

@@ -1,16 +1,16 @@
-# Copyright 2022 The HuggingFace Team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 import math
 
 import numpy as np
@@ -43,17 +43,17 @@ def get_timestep_embedding(
     emb = torch.exp(exponent).to(device=timesteps.device)
     emb = timesteps[:, None].float() * emb[None, :]
 
-    # scale embeddings
+
     emb = scale * emb
 
-    # concat sine and cosine embeddings
+
     emb = torch.cat([torch.sin(emb), torch.cos(emb)], dim=-1)
 
-    # flip sine and cosine embeddings
+
     if flip_sin_to_cos:
         emb = torch.cat([emb[:, half_dim:], emb[:, :half_dim]], dim=-1)
 
-    # zero pad
+
     if embedding_dim % 2 == 1:
         emb = torch.nn.functional.pad(emb, (0, 1, 0, 0))
     return emb
@@ -103,7 +103,7 @@ class GaussianFourierProjection(nn.Module):
         super().__init__()
         self.weight = nn.Parameter(torch.randn(embedding_size) * scale, requires_grad=False)
 
-        # to delete later
+
         self.W = nn.Parameter(torch.randn(embedding_size) * scale, requires_grad=False)
 
         self.weight = self.W

@@ -1,18 +1,18 @@
-# Copyright 2022 Zhejiang University Team and The HuggingFace Team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
-# DISCLAIMER: This file is strongly influenced by https://github.com/ermongroup/ddim
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import math
 import warnings
@@ -108,10 +108,10 @@ class PNDMScheduler(SchedulerMixin, ConfigMixin):
         if beta_schedule == "linear":
             self.betas = np.linspace(beta_start, beta_end, num_train_timesteps, dtype=np.float32)
         elif beta_schedule == "scaled_linear":
-            # this schedule is very specific to the latent diffusion model.
+
             self.betas = np.linspace(beta_start**0.5, beta_end**0.5, num_train_timesteps, dtype=np.float32) ** 2
         elif beta_schedule == "squaredcos_cap_v2":
-            # Glide cosine schedule
+
             self.betas = betas_for_alpha_bar(num_train_timesteps)
         else:
             raise NotImplementedError(f"{beta_schedule} does is not implemented for {self.__class__}")
@@ -121,18 +121,18 @@ class PNDMScheduler(SchedulerMixin, ConfigMixin):
 
         self.final_alpha_cumprod = np.array(1.0) if set_alpha_to_one else self.alphas_cumprod[0]
 
-        # For now we only support F-PNDM, i.e. the runge-kutta method
-        # For more information on the algorithm please take a look at the paper: https://arxiv.org/pdf/2202.09778.pdf
-        # mainly at formula (9), (12), (13) and the Algorithm 2.
+
+
+
         self.pndm_order = 4
 
-        # running values
+
         self.cur_model_output = 0
         self.counter = 0
         self.cur_sample = None
         self.ets = []
 
-        # setable values
+
         self.num_inference_steps = None
         self._timesteps = np.arange(0, num_train_timesteps)[::-1].copy()
         self.prk_timesteps = None
@@ -163,15 +163,15 @@ class PNDMScheduler(SchedulerMixin, ConfigMixin):
 
         self.num_inference_steps = num_inference_steps
         step_ratio = self.config.num_train_timesteps // self.num_inference_steps
-        # creates integer timesteps by multiplying by ratio
-        # casting to int to avoid issues when num_inference_step is power of 3
+
+
         self._timesteps = (np.arange(0, num_inference_steps) * step_ratio).round()
         self._timesteps += offset
 
         if self.config.skip_prk_steps:
-            # for some models like stable diffusion the prk steps can/should be skipped to
-            # produce better results. When using PNDM with `self.config.skip_prk_steps` the implementation
-            # is based on crowsonkb's PLMS sampler implementation: https://github.com/CompVis/latent-diffusion/pull/51
+
+
+
             self.prk_timesteps = np.array([])
             self.plms_timesteps = np.concatenate([self._timesteps[:-1], self._timesteps[-2:-1], self._timesteps[-1:]])[
                 ::-1
@@ -266,7 +266,7 @@ class PNDMScheduler(SchedulerMixin, ConfigMixin):
             model_output = self.cur_model_output + 1 / 6 * model_output
             self.cur_model_output = 0
 
-        # cur_sample should not be `None`
+
         cur_sample = self.cur_sample if self.cur_sample is not None else sample
 
         prev_sample = self._get_prev_sample(cur_sample, timestep, prev_timestep, model_output)
@@ -344,35 +344,35 @@ class PNDMScheduler(SchedulerMixin, ConfigMixin):
         return SchedulerOutput(prev_sample=prev_sample)
 
     def _get_prev_sample(self, sample, timestep, prev_timestep, model_output):
-        # See formula (9) of PNDM paper https://arxiv.org/pdf/2202.09778.pdf
-        # this function computes x_(t−δ) using the formula of (9)
-        # Note that x_t needs to be added to both sides of the equation
 
-        # Notation (<variable name> -> <name in paper>
-        # alpha_prod_t -> α_t
-        # alpha_prod_t_prev -> α_(t−δ)
-        # beta_prod_t -> (1 - α_t)
-        # beta_prod_t_prev -> (1 - α_(t−δ))
-        # sample -> x_t
-        # model_output -> e_θ(x_t, t)
-        # prev_sample -> x_(t−δ)
+
+
+
+
+
+
+
+
+
+
+
         alpha_prod_t = self.alphas_cumprod[timestep]
         alpha_prod_t_prev = self.alphas_cumprod[prev_timestep] if prev_timestep >= 0 else self.final_alpha_cumprod
         beta_prod_t = 1 - alpha_prod_t
         beta_prod_t_prev = 1 - alpha_prod_t_prev
 
-        # corresponds to (α_(t−δ) - α_t) divided by
-        # denominator of x_t in formula (9) and plus 1
-        # Note: (α_(t−δ) - α_t) / (sqrt(α_t) * (sqrt(α_(t−δ)) + sqr(α_t))) =
-        # sqrt(α_(t−δ)) / sqrt(α_t))
+
+
+
+
         sample_coeff = (alpha_prod_t_prev / alpha_prod_t) ** (0.5)
 
-        # corresponds to denominator of e_θ(x_t, t) in formula (9)
+
         model_output_denom_coeff = alpha_prod_t * beta_prod_t_prev ** (0.5) + (
             alpha_prod_t * beta_prod_t * alpha_prod_t_prev
         ) ** (0.5)
 
-        # full formula (9)
+
         prev_sample = (
             sample_coeff * sample - (alpha_prod_t_prev - alpha_prod_t) * model_output / model_output_denom_coeff
         )

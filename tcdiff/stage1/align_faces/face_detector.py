@@ -40,7 +40,7 @@ class FaceDetector():
         if isinstance(image, str):
             rgb_img = Image.open(image).convert('RGB')
         elif isinstance(image, np.ndarray):
-            # nd array is BGR. so change to RGB
+
             rgb_img = Image.fromarray(image[:, :, ::-1]).convert('RGB')
         elif isinstance(image, Image.Image):
             rgb_img = image.convert('RGB')
@@ -55,7 +55,7 @@ class FaceDetector():
         pad_x = padding_ratio * width
         pad_y = padding_ratio * height
         xmin, ymin, xmax, ymax = xmin-pad_x, ymin-pad_y, xmax+pad_x, ymax+pad_y
-        # return (max(xmin, 0), max(ymin, 0), min(image_shape[1], xmax), min(image_shape[0], ymax))
+
         return xmin, ymin, xmax, ymax
 
     def make_square_bbox(self, bbox, image_shape):
@@ -71,7 +71,7 @@ class FaceDetector():
             pad2 = (width - height) - pad1
             ymin, ymax = ymin-pad1, ymax+pad2
 
-        # return (max(xmin, 0), max(ymin, 0), min(image_shape[1], xmax), min(image_shape[0], ymax))
+
         return xmin, ymin, xmax, ymax
 
 
@@ -81,7 +81,7 @@ class FaceDetector():
 
         predictions = self.model.predict_jsons(rgb_img_np)
 
-        # selection most confident output
+
         arg_max_idx = np.argmax([pred['score'] for pred in predictions])
         prediction = predictions[arg_max_idx]
 
@@ -90,7 +90,7 @@ class FaceDetector():
         landmark = np.array(prediction['landmarks'])
 
         if score == -1:
-            # predictions = [{"bbox": [], "score": -1, "landmarks": []}]
+
             if self.fallback == 'pass':
                 success = False
                 return success, None, None, None, None, None
@@ -101,24 +101,24 @@ class FaceDetector():
             else:
                 raise ValueError('not a correct fallback', self.fallback)
 
-        # if input image has forehead cutoff, bbox is short
+
         landmark_check = landmark[0] - np.abs(landmark[0] - landmark[3])  # forhead area
         bbox[1] = min(bbox[1], landmark_check[1])
 
-        # pad bbox
+
         bbox = self.pad_bbox(bbox, padding_ratio=self.pad_bbox_ratio, image_shape=rgb_img_np.shape)
         bbox = [int(np.round(i, 0)) for i in bbox]
-        # square bbox
+
         if self.square_bbox:
             bbox = self.make_square_bbox(bbox, image_shape=rgb_img_np.shape)
 
         if self.fallback == 'avg':
-            # update average
+
             self.bbox_mean = (self.bbox_mean * self.num_tracked + np.array(bbox)) / (self.num_tracked + 1)
             self.landmark_mean = (self.landmark_mean * self.num_tracked + landmark) / (self.num_tracked + 1)
             self.num_tracked = self.num_tracked + 1
 
-        # crop
+
         xmin, ymin, xmax, ymax = bbox
         cropped_image = Image.fromarray(rgb_img_np).crop((xmin, ymin, xmax, ymax))
         landmark[:,0] = landmark[:,0] - xmin

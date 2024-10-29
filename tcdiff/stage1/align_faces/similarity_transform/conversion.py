@@ -24,12 +24,12 @@ def transform_keypoints(kps, meta, invert=False):
 
 
 def cv2_param_to_torch_theta(cv2_tfm, image_width, image_height, output_width, output_height):
-    # https://github.com/wuneng/WarpAffine2GridSample
+
     """4.Affine Transformation Matrix to theta"""
     src = np.array([[0, 0], [0, 1], [1, 1]], dtype=np.float32)
     dst = transform_keypoints(src, cv2_tfm)
 
-    # normalize to [-1, 1]
+
     src = src / [image_width, image_height] * 2 - 1
     dst = dst / [output_width, output_height] * 2 - 1
     theta = trans.estimate_transform("affine", src=dst, dst=src).params
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     image = np.array(Image.open(raw))
     image_gt = np.array(Image.open(aligned))
 
-    # null transform
+
     cv2_tfm = np.array([[1, 0, 0],
                         [0, 1, 0]]).astype(np.float32)
     cv_img = cv2.warpAffine(image_gt, cv2_tfm[:2], (112,112))

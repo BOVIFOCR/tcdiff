@@ -1,4 +1,4 @@
-# 🧨 Diffusers Pipelines
+
 
 Pipelines provide a simple way to run state-of-the-art diffusion models in inference.
 Most diffusion systems consist of multiple independently-trained models and highly adaptable scheduler 
@@ -25,7 +25,7 @@ More specifically, we strive to provide pipelines that
 If you are looking for *official* training examples, please have a look at [examples](https://github.com/huggingface/diffusers/tree/main/examples).
 
 
-## Pipelines Summary
+
 
 The following table summarizes all officially supported pipelines, their corresponding paper, and if 
 available a colab notebook to directly try them out.
@@ -47,7 +47,7 @@ available a colab notebook to directly try them out.
 **Note**: Pipelines are simple examples of how to play around with the diffusion systems as described in the corresponding papers. 
 However, most of them can be adapted to use different scheduler components or even different model components. Some pipeline examples are shown in the [Examples](#examples) below.
 
-## Pipelines API
+
 
 Diffusion models often consist of multiple independently-trained models or other previously existing components. 
 
@@ -68,7 +68,7 @@ each pipeline, one should look directly into the respective pipeline.
 **Note**: All pipelines have PyTorch's autograd disabled by decorating the `__call__` method with a [`torch.no_grad`](https://pytorch.org/docs/stable/generated/torch.no_grad.html) decorator because pipelines should
 not be used for training. If you want to store the gradients during the forward pass, we recommend writing your own pipeline, see also our [community-examples](https://github.com/huggingface/diffusers/tree/main/examples/community)
 
-## Contribution
+
 
 We are more than happy about any contribution to the officially supported pipelines 🤗. We aspire 
 all of our pipelines to be  **self-contained**, **easy-to-tweak**, **beginner-friendly** and for **one-purpose-only**.
@@ -80,12 +80,12 @@ logic including pre-processing, an unrolled diffusion loop, and post-processing 
 - **Easy-to-tweak**: Certain pipelines will not be able to handle all use cases and tasks that you might like them to. If you want to use a certain pipeline for a specific use case that is not yet supported, you might have to copy the pipeline file and tweak the code to your needs. We try to make the pipeline code as readable as possible so that each part –from pre-processing to diffusing to post-processing– can easily be adapted. If you would like the community to benefit from your customized pipeline, we would love to see a contribution to our [community-examples](https://github.com/huggingface/diffusers/tree/main/examples/community). If you feel that an important pipeline should be part of the official pipelines but isn't, a contribution to the [official pipelines](https://github.com/huggingface/diffusers/blob/main/src/diffusers/pipelines) would be even better.
 - **One-purpose-only**: Pipelines should be used for one task and one task only. Even if two tasks are very similar from a modeling point of view, *e.g.* image2image translation and in-painting, pipelines shall be used for one task only to keep them *easy-to-tweak* and *readable*.
 
-## Examples
 
-### Text-to-Image generation with Stable Diffusion
+
+
 
 ```python
-# make sure you're logged in with `huggingface-cli login`
+
 from torch import autocast
 from diffusers import StableDiffusionPipeline, LMSDiscreteScheduler
 
@@ -99,7 +99,7 @@ with autocast("cuda"):
 image.save("astronaut_rides_horse.png")
 ```
 
-### Image-to-Image text-guided generation with Stable Diffusion
+
 
 The `StableDiffusionImg2ImgPipeline` lets you pass a text prompt and an initial image to condition the generation of new images.
 
@@ -111,7 +111,7 @@ from io import BytesIO
 
 from diffusers import StableDiffusionImg2ImgPipeline
 
-# load the pipeline
+
 device = "cuda"
 pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
     "CompVis/stable-diffusion-v1-4",
@@ -120,7 +120,7 @@ pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
     use_auth_token=True
 ).to(device)
 
-# let's download an initial image
+
 url = "https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg"
 
 response = requests.get(url)
@@ -136,12 +136,12 @@ images[0].save("fantasy_landscape.png")
 ```
 You can also run this example on colab [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/huggingface/notebooks/blob/main/diffusers/image_2_image_using_diffusers.ipynb)
 
-### Tweak prompts reusing seeds and latents
+
 
 You can generate your own latents to reproduce results, or tweak your prompt on a specific result you liked. [This notebook](https://github.com/pcuenca/diffusers-examples/blob/main/notebooks/stable-diffusion-seeds.ipynb) shows how to do it step by step. You can also run it in Google Colab [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/pcuenca/diffusers-examples/blob/main/notebooks/stable-diffusion-seeds.ipynb).
 
 
-### In-painting using Stable Diffusion
+
 
 The `StableDiffusionInpaintPipeline` lets you edit specific parts of an image by providing a mask and text prompt.
 

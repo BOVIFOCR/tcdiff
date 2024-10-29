@@ -33,10 +33,10 @@ def same_config(config1, config2, skip_keys=[]):
 def download_ir_pretrained_statedict(backbone_name, dataset_name, loss_fn):
 
     if backbone_name == 'ir_101' and dataset_name == 'webface4m' and loss_fn == 'adaface':
-        root = os_utils.get_project_root(project_name='dcface')
+        root = os_utils.get_project_root(project_name='tcdiff')
         _name, _id = 'adaface_ir101_webface4m.ckpt', '18jQkqB0avFqWa0Pas52g54xNshUOQJpQ'
     elif backbone_name == 'ir_50' and dataset_name == 'webface4m' and loss_fn == 'adaface':
-        root = os_utils.get_project_root(project_name='dcface')
+        root = os_utils.get_project_root(project_name='tcdiff')
         _name, _id = 'adaface_ir50_webface4m.ckpt', '1BmDRrhPsHSbXcWZoYFPJg2KJn1sd3QpN'
     else:
         raise NotImplementedError()
@@ -47,7 +47,7 @@ def download_ir_pretrained_statedict(backbone_name, dataset_name, loss_fn):
         try:
             subprocess.check_call([os.path.expanduser('~/.local/bin/gdown'), '--id', _id])
         except:
-            # subprocess.check_call([os.path.expanduser('~/anaconda3/envs/pj3/bin/gdown'), '--id', _id])
+
             subprocess.check_call([os.path.expanduser('gdown'), '--id', _id])
         if not os.path.isdir(os.path.dirname(checkpoint_path)):
             subprocess.check_call(['mkdir', '-p', os.path.dirname(checkpoint_path)])
@@ -118,7 +118,7 @@ def make_resizer(library, filter, output_size):
             return x
     elif library == "PyTorch":
         import warnings
-        # ignore the numpy warnings
+
         warnings.filterwarnings("ignore")
         def func(x):
             x = torch.Tensor(x.transpose((2, 0, 1)))[None, ...]
@@ -180,9 +180,9 @@ class RecognitionModel(nn.Module):
         if self.swap_channel:
             x = torch.flip(x, dims=[1])
 
-        # from general_utils import img_utils
-        # import cv2
-        # cv2.imwrite('/mckim/temp/temp.png', img_utils.tensor_to_numpy(x[0].cpu()))
+
+
+
         feature, norm, spatials = self.backbone(x, return_spatial=self.recognition_config.return_spatial)
 
         if self.recognition_config.normalize_feature:
@@ -252,7 +252,7 @@ def make_recognition_model(recognition_config, enable_training=False):
         if head is not None:
             head.load_state_dict({k.replace("head.", ''): v for k, v in statedict.items() if 'head.' in k})
     else:
-        # load statedict
+
         assert recognition_config.dataset == 'webface4m'
         assert recognition_config.loss_fn == 'adaface'
         print('Loading pretrained IR model trained with adaface webface4m')

@@ -1,16 +1,16 @@
-# Copyright 2022 NVIDIA and The HuggingFace Team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 from dataclasses import dataclass
@@ -89,7 +89,7 @@ class KarrasVeScheduler(SchedulerMixin, ConfigMixin):
         s_max: float = 50,
         tensor_format: str = "pt",
     ):
-        # setable values
+
         self.num_inference_steps = None
         self.timesteps = None
         self.schedule = None  # sigma(t_i)
@@ -133,7 +133,7 @@ class KarrasVeScheduler(SchedulerMixin, ConfigMixin):
         else:
             gamma = 0
 
-        # sample eps ~ N(0, S_noise^2 * I)
+
         eps = self.config.s_noise * torch.randn(sample.shape, generator=generator).to(sample.device)
         sigma_hat = sigma + gamma * sigma
         sample_hat = sample + ((sigma_hat**2 - sigma**2) ** 0.5 * eps)

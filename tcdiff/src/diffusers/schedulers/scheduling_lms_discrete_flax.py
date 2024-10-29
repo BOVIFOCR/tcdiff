@@ -1,16 +1,16 @@
-# Copyright 2022 Katherine Crowson and The HuggingFace Team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 from dataclasses import dataclass
 from typing import Optional, Tuple, Union
@@ -25,7 +25,7 @@ from .scheduling_utils import SchedulerMixin, SchedulerOutput
 
 @flax.struct.dataclass
 class LMSDiscreteSchedulerState:
-    # setable values
+
     num_inference_steps: Optional[int] = None
     timesteps: Optional[jnp.ndarray] = None
     sigmas: Optional[jnp.ndarray] = None
@@ -79,7 +79,7 @@ class FlaxLMSDiscreteScheduler(SchedulerMixin, ConfigMixin):
         if beta_schedule == "linear":
             self.betas = jnp.linspace(beta_start, beta_end, num_train_timesteps, dtype=jnp.float32)
         elif beta_schedule == "scaled_linear":
-            # this schedule is very specific to the latent diffusion model.
+
             self.betas = jnp.linspace(beta_start**0.5, beta_end**0.5, num_train_timesteps, dtype=jnp.float32) ** 2
         else:
             raise NotImplementedError(f"{beta_schedule} does is not implemented for {self.__class__}")
@@ -168,20 +168,20 @@ class FlaxLMSDiscreteScheduler(SchedulerMixin, ConfigMixin):
         """
         sigma = state.sigmas[timestep]
 
-        # 1. compute predicted original sample (x_0) from sigma-scaled predicted noise
+
         pred_original_sample = sample - sigma * model_output
 
-        # 2. Convert to an ODE derivative
+
         derivative = (sample - pred_original_sample) / sigma
         state = state.replace(derivatives=state.derivatives.append(derivative))
         if len(state.derivatives) > order:
             state = state.replace(derivatives=state.derivatives.pop(0))
 
-        # 3. Compute linear multistep coefficients
+
         order = min(timestep + 1, order)
         lms_coeffs = [self.get_lms_coefficient(state, order, timestep, curr_order) for curr_order in range(order)]
 
-        # 4. Compute previous sample based on the derivatives path
+
         prev_sample = sample + sum(
             coeff * derivative for coeff, derivative in zip(lms_coeffs, reversed(state.derivatives))
         )

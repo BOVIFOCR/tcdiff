@@ -1,17 +1,17 @@
-# coding=utf-8
-# Copyright 2022 The HuggingFace Inc. team.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import os
 from pickle import UnpicklingError
@@ -65,7 +65,7 @@ class FlaxModelMixin:
         Helper method to cast floating-point values of given parameter `PyTree` to given `dtype`.
         """
 
-        # taken from https://github.com/deepmind/jmp/blob/3a8318abc3292be38582794dbf7b094e6583b192/jmp/_src/policy.py#L27
+
         def conditional_cast(param):
             if isinstance(param, jnp.ndarray) and jnp.issubdtype(param.dtype, jnp.floating):
                 param = param.astype(dtype)
@@ -291,7 +291,7 @@ class FlaxModelMixin:
 
         user_agent = {"file_type": "model", "framework": "flax", "from_auto_class": from_auto_class}
 
-        # Load config if we don't provide a configuration
+
         config_path = config if config is not None else pretrained_model_name_or_path
         model, model_kwargs = cls.from_config(
             config_path,
@@ -304,12 +304,12 @@ class FlaxModelMixin:
             use_auth_token=use_auth_token,
             revision=revision,
             subfolder=subfolder,
-            # model args
+
             dtype=dtype,
             **kwargs,
         )
 
-        # Load model
+
         pretrained_path_with_subfolder = (
             pretrained_model_name_or_path
             if subfolder is None
@@ -323,9 +323,9 @@ class FlaxModelMixin:
                     )
                 model_file = os.path.join(pretrained_path_with_subfolder, WEIGHTS_NAME)
             elif os.path.isfile(os.path.join(pretrained_path_with_subfolder, FLAX_WEIGHTS_NAME)):
-                # Load from a Flax checkpoint
+
                 model_file = os.path.join(pretrained_path_with_subfolder, FLAX_WEIGHTS_NAME)
-            # Check if pytorch weights exist instead
+
             elif os.path.isfile(os.path.join(pretrained_path_with_subfolder, WEIGHTS_NAME)):
                 raise EnvironmentError(
                     f"{WEIGHTS_NAME} file found in directory {pretrained_path_with_subfolder}. Please load the model"
@@ -391,10 +391,10 @@ class FlaxModelMixin:
                 )
 
         if from_pt:
-            # Step 1: Get the pytorch file
+
             pytorch_model_file = load_state_dict(model_file)
 
-            # Step 2: Convert the weights
+
             state = convert_pytorch_state_dict_to_flax(pytorch_model_file, model)
         else:
             try:
@@ -413,12 +413,12 @@ class FlaxModelMixin:
                             raise ValueError from e
                 except (UnicodeDecodeError, ValueError):
                     raise EnvironmentError(f"Unable to convert {model_file} to Flax deserializable object. ")
-            # make sure all arrays are stored as jnp.ndarray
-            # NOTE: This is to prevent a bug this will be fixed in Flax >= v0.3.4:
-            # https://github.com/google/flax/issues/1261
+
+
+
         state = jax.tree_util.tree_map(lambda x: jax.device_put(x, jax.devices("cpu")[0]), state)
 
-        # flatten dicts
+
         state = flatten_dict(state)
 
         params_shape_tree = jax.eval_shape(model.init_weights, rng=jax.random.PRNGKey(0))
@@ -436,8 +436,8 @@ class FlaxModelMixin:
             )
             cls._missing_keys = missing_keys
 
-        # Mismatched keys contains tuples key/shape1/shape2 of weights in the checkpoint that have a shape not
-        # matching the weights in the model.
+
+
         mismatched_keys = []
         for key in state.keys():
             if key in shape_state and state[key].shape != shape_state[key].shape:
@@ -446,7 +446,7 @@ class FlaxModelMixin:
                     f"{state[key].shape} which is incompatible with the model shape {shape_state[key].shape}. "
                 )
 
-        # remove unexpected keys to not be saved again
+
         for unexpected_key in unexpected_keys:
             del state[unexpected_key]
 
@@ -487,13 +487,13 @@ class FlaxModelMixin:
                 " to use it for predictions and inference."
             )
 
-        # dictionary of key: dtypes for the model params
+
         param_dtypes = jax.tree_map(lambda x: x.dtype, state)
-        # extract keys of parameters not in jnp.float32
+
         fp16_params = [k for k in param_dtypes if param_dtypes[k] == jnp.float16]
         bf16_params = [k for k in param_dtypes if param_dtypes[k] == jnp.bfloat16]
 
-        # raise a warning if any of the parameters are not in jnp.float32
+
         if len(fp16_params) > 0:
             logger.warning(
                 f"Some of the weights of {model.__class__.__name__} were initialized in float16 precision from "
@@ -540,12 +540,12 @@ class FlaxModelMixin:
 
         model_to_save = self
 
-        # Attach architecture to the config
-        # Save the config
+
+
         if is_main_process:
             model_to_save.save_config(save_directory)
 
-        # save model
+
         output_model_file = os.path.join(save_directory, FLAX_WEIGHTS_NAME)
         with open(output_model_file, "wb") as f:
             model_bytes = to_bytes(params)

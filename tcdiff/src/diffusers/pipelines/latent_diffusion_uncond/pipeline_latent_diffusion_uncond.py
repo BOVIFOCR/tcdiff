@@ -67,7 +67,7 @@ class LDMPipeline(DiffusionPipeline):
                 " Consider using `pipe.to(torch_device)` instead."
             )
 
-            # Set device as before (to be removed in 0.3.0)
+
             if device is None:
                 device = "cuda" if torch.cuda.is_available() else "cpu"
             self.to(device)
@@ -80,7 +80,7 @@ class LDMPipeline(DiffusionPipeline):
 
         self.scheduler.set_timesteps(num_inference_steps)
 
-        # prepare extra kwargs for the scheduler step, since not all schedulers have the same signature
+
         accepts_eta = "eta" in set(inspect.signature(self.scheduler.step).parameters.keys())
 
         extra_kwargs = {}
@@ -88,12 +88,12 @@ class LDMPipeline(DiffusionPipeline):
             extra_kwargs["eta"] = eta
 
         for t in self.progress_bar(self.scheduler.timesteps):
-            # predict the noise residual
+
             noise_prediction = self.unet(latents, t).sample
-            # compute the previous noisy sample x_t -> x_t-1
+
             latents = self.scheduler.step(noise_prediction, t, latents, **extra_kwargs).prev_sample
 
-        # decode the image latents with the VAE
+
         image = self.vqvae.decode(latents).sample
 
         image = (image / 2 + 0.5).clamp(0, 1)

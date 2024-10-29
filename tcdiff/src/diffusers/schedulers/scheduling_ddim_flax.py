@@ -1,19 +1,19 @@
-# Copyright 2022 Stanford University Team and The HuggingFace Team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
-# DISCLAIMER: This code is strongly influenced by https://github.com/pesser/pytorch_diffusion
-# and https://github.com/hojonathanho/diffusion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import math
 from dataclasses import dataclass
@@ -57,7 +57,7 @@ def betas_for_alpha_bar(num_diffusion_timesteps, max_beta=0.999) -> jnp.ndarray:
 
 @flax.struct.dataclass
 class DDIMSchedulerState:
-    # setable values
+
     timesteps: jnp.ndarray
     alphas_cumprod: jnp.ndarray
     num_inference_steps: Optional[int] = None
@@ -122,23 +122,23 @@ class FlaxDDIMScheduler(SchedulerMixin, ConfigMixin):
         if beta_schedule == "linear":
             self.betas = jnp.linspace(beta_start, beta_end, num_train_timesteps, dtype=jnp.float32)
         elif beta_schedule == "scaled_linear":
-            # this schedule is very specific to the latent diffusion model.
+
             self.betas = jnp.linspace(beta_start**0.5, beta_end**0.5, num_train_timesteps, dtype=jnp.float32) ** 2
         elif beta_schedule == "squaredcos_cap_v2":
-            # Glide cosine schedule
+
             self.betas = betas_for_alpha_bar(num_train_timesteps)
         else:
             raise NotImplementedError(f"{beta_schedule} does is not implemented for {self.__class__}")
 
         self.alphas = 1.0 - self.betas
 
-        # HACK for now - clean up later (PVP)
+
         self._alphas_cumprod = jnp.cumprod(self.alphas, axis=0)
 
-        # At every step in ddim, we are looking into the previous alphas_cumprod
-        # For the final step, there is no previous alphas_cumprod because we are already at 0
-        # `set_alpha_to_one` decides whether we set this parameter simply to one or
-        # whether we use the final alpha of the "non-previous" one.
+
+
+
+
         self.final_alpha_cumprod = jnp.array(1.0) if set_alpha_to_one else float(self._alphas_cumprod[0])
 
     def create_state(self):
@@ -169,8 +169,8 @@ class FlaxDDIMScheduler(SchedulerMixin, ConfigMixin):
         offset = self.config.steps_offset
 
         step_ratio = self.config.num_train_timesteps // num_inference_steps
-        # creates integer timesteps by multiplying by ratio
-        # casting to int to avoid issues when num_inference_step is power of 3
+
+
         timesteps = (jnp.arange(0, num_inference_steps) * step_ratio).round()[::-1]
         timesteps = timesteps + offset
 
@@ -209,44 +209,44 @@ class FlaxDDIMScheduler(SchedulerMixin, ConfigMixin):
                 "Number of inference steps is 'None', you need to run 'set_timesteps' after creating the scheduler"
             )
 
-        # See formulas (12) and (16) of DDIM paper https://arxiv.org/pdf/2010.02502.pdf
-        # Ideally, read DDIM paper in-detail understanding
 
-        # Notation (<variable name> -> <name in paper>
-        # - pred_noise_t -> e_theta(x_t, t)
-        # - pred_original_sample -> f_theta(x_t, t) or x_0
-        # - std_dev_t -> sigma_t
-        # - eta -> η
-        # - pred_sample_direction -> "direction pointing to x_t"
-        # - pred_prev_sample -> "x_t-1"
 
-        # TODO(Patrick) - eta is always 0.0 for now, allow to be set in step function
+
+
+
+
+
+
+
+
+
+
         eta = 0.0
 
-        # 1. get previous step value (=t-1)
+
         prev_timestep = timestep - self.config.num_train_timesteps // state.num_inference_steps
 
         alphas_cumprod = state.alphas_cumprod
 
-        # 2. compute alphas, betas
+
         alpha_prod_t = alphas_cumprod[timestep]
         alpha_prod_t_prev = jnp.where(prev_timestep >= 0, alphas_cumprod[prev_timestep], self.final_alpha_cumprod)
 
         beta_prod_t = 1 - alpha_prod_t
 
-        # 3. compute predicted original sample from predicted noise also called
-        # "predicted x_0" of formula (12) from https://arxiv.org/pdf/2010.02502.pdf
+
+
         pred_original_sample = (sample - beta_prod_t ** (0.5) * model_output) / alpha_prod_t ** (0.5)
 
-        # 4. compute variance: "sigma_t(η)" -> see formula (16)
-        # σ_t = sqrt((1 − α_t−1)/(1 − α_t)) * sqrt(1 − α_t/α_t−1)
+
+
         variance = self._get_variance(timestep, prev_timestep, alphas_cumprod)
         std_dev_t = eta * variance ** (0.5)
 
-        # 5. compute "direction pointing to x_t" of formula (12) from https://arxiv.org/pdf/2010.02502.pdf
+
         pred_sample_direction = (1 - alpha_prod_t_prev - std_dev_t**2) ** (0.5) * model_output
 
-        # 6. compute x_t without "random noise" of formula (12) from https://arxiv.org/pdf/2010.02502.pdf
+
         prev_sample = alpha_prod_t_prev ** (0.5) * pred_original_sample + pred_sample_direction
 
         if not return_dict:

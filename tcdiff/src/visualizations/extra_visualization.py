@@ -74,7 +74,7 @@ class StyleIdDataset(Dataset):
                 img = batch[0]
             style_images.append(img)
         style_images = torch.stack(style_images)
-        # style_images = torch.stack([self.style_dataset[idx.item()]['image'] for idx in style_indexes])
+
 
         return id_images, style_images, labels, names
 
@@ -109,7 +109,7 @@ def style_image_sampler(style_sampling_method, num_image_per_subject, id_index_s
         style_index_splits = []
         for id_index_split, names_split in zip(id_index_splits, names_splits):
             batch_size = len(id_index_split)
-            # make style index per batch
+
             style_index_split = []
             for id_index, name in zip(id_index_split, names_split):
                 center_candidates = topk_similar_centers_all[id_index]
@@ -132,14 +132,14 @@ def style_image_sampler(style_sampling_method, num_image_per_subject, id_index_s
         style_index_splits = []
         for id_index_split, names_split in zip(id_index_splits, names_splits):
             batch_size = len(id_index_split)
-            # make style index per batch
+
             style_index_split = np.arange(batch_size)
             style_index_splits.append(style_index_split)
     elif style_sampling_method == 'random':
         style_index_splits = []
         for id_index_split, names_split in zip(id_index_splits, names_splits):
             batch_size = len(id_index_split)
-            # make style index per batch
+
             style_index_split = [np.random.randint(0, len(style_dataset), 1)[0] for i in range(batch_size)]
             style_index_splits.append(style_index_split)
     elif style_sampling_method == 'same_gender_same_race':
@@ -176,14 +176,14 @@ def dataset_generate(pl_module, style_dataset, id_dataset, num_image_per_subject
     os.makedirs(save_root, exist_ok=True)
     print(save_root)
 
-    # generate batched label and name list
+
     labels_splits, names_splits = batched_label_name_list(batch_size, num_subject,
                                                           num_image_per_subject, num_partition, partition_idx)
 
-    # make id image split index
+
     id_index_splits = labels_splits  # label name becomes index to sample id image from id_dataset
 
-    # make style image split index
+
     style_index_splits = style_image_sampler(style_sampling_method, num_image_per_subject, id_index_splits,
                                              names_splits, id_dataset, style_dataset, pl_module)
 
@@ -198,7 +198,7 @@ def dataset_generate(pl_module, style_dataset, id_dataset, num_image_per_subject
         start_time = time.time()
         id_images, style_images, labels, names = batch
 
-        # Bernardo
+
         if torch.any(labels >= start_label):
 
             plotting_images = sample_batch(id_images, style_images, pl_module, seed=labels[0].item())
@@ -229,7 +229,7 @@ def dataset_generate_mimic_train(pl_module, style_dataset, id_dataset, num_image
 
     idx_splits = None
     print('style_sampling_method', style_sampling_method)
-    # generate batched label and name list
+
     if style_sampling_method in ['random', 'same_gender_same_race']:
         labels_splits, names_splits = batched_label_name_list(batch_size, num_subject,
                                                               num_image_per_subject, num_partition, partition_idx)
@@ -267,10 +267,10 @@ def dataset_generate_mimic_train(pl_module, style_dataset, id_dataset, num_image
 
     else:
         raise ValueError()
-    # make id image split index
+
     id_index_splits = labels_splits  # label name becomes index to sample id image from id_dataset
 
-    # make style image split index
+
     style_index_splits = style_image_sampler(style_sampling_method, num_image_per_subject, id_index_splits,
                                              names_splits, id_dataset, style_dataset, pl_module, idx_splits)
 
@@ -312,7 +312,7 @@ def sample_batch(id_images, style_images, pl_module, seed=None):
                                    show_progress=False, generator=generator, mixing_batch=None,
                                    return_x0_intermediates=False)
 
-    # select which time to plot
+
     plotting_images = pred_images * 255
     return plotting_images[:, :, :, ::-1]
 

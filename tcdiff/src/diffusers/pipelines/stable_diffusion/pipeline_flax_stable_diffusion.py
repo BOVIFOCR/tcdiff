@@ -135,11 +135,11 @@ class FlaxStableDiffusionPipeline(FlaxDiffusionPipeline):
         if height % 8 != 0 or width % 8 != 0:
             raise ValueError(f"`height` and `width` have to be divisible by 8 but are {height} and {width}.")
 
-        # get prompt text embeddings
+
         text_embeddings = self.text_encoder(prompt_ids, params=params["text_encoder"])[0]
 
-        # TODO: currently it is assumed `do_classifier_free_guidance = guidance_scale > 1.0`
-        # implement this conditional `do_classifier_free_guidance = guidance_scale > 1.0`
+
+
         batch_size = prompt_ids.shape[0]
 
         max_length = prompt_ids.shape[-1]
@@ -163,52 +163,52 @@ class FlaxStableDiffusionPipeline(FlaxDiffusionPipeline):
 
         def loop_body(step, args):
             latents, scheduler_state = args
-            # For classifier free guidance, we need to do two forward passes.
-            # Here we concatenate the unconditional and text embeddings into a single batch
-            # to avoid doing two forward passes
+
+
+
             latents_input = jnp.concatenate([latents] * 2)
 
             t = jnp.array(scheduler_state.timesteps, dtype=jnp.int32)[step]
             timestep = jnp.broadcast_to(t, latents_input.shape[0])
 
-            # predict the noise residual
+
             noise_pred = self.unet.apply(
                 {"params": params["unet"]},
                 jnp.array(latents_input),
                 jnp.array(timestep, dtype=jnp.int32),
                 encoder_hidden_states=context,
             ).sample
-            # perform guidance
+
             noise_pred_uncond, noise_prediction_text = jnp.split(noise_pred, 2, axis=0)
             noise_pred = noise_pred_uncond + guidance_scale * (noise_prediction_text - noise_pred_uncond)
 
-            # compute the previous noisy sample x_t -> x_t-1
+
             latents, scheduler_state = self.scheduler.step(scheduler_state, noise_pred, t, latents).to_tuple()
             return latents, scheduler_state
 
         scheduler_state = self.scheduler.set_timesteps(params["scheduler"], num_inference_steps=num_inference_steps)
 
         if debug:
-            # run with python for loop
+
             for i in range(num_inference_steps):
                 latents, scheduler_state = loop_body(i, (latents, scheduler_state))
         else:
             latents, _ = jax.lax.fori_loop(0, num_inference_steps, loop_body, (latents, scheduler_state))
 
-        # scale and decode the image latents with vae
+
         latents = 1 / 0.18215 * latents
-        # TODO: check when flax vae gets merged into main
+
         image = self.vae.apply({"params": params["vae"]}, latents, method=self.vae.decode).sample
 
         image = (image / 2 + 0.5).clip(0, 1).transpose(0, 2, 3, 1)
 
-        #        image = jnp.asarray(image).transpose(0, 2, 3, 1)
-        # run safety checker
-        # TODO: check when flax safety checker gets merged into main
-        #        safety_checker_input = self.feature_extractor(self.numpy_to_pil(image), return_tensors="np")
-        #        image, has_nsfw_concept = self.safety_checker(
-        #            images=image, clip_input=safety_checker_input.pixel_values, params=params["safety_params"]
-        #        )
+
+
+
+
+
+
+
         has_nsfw_concept = False
 
         if not return_dict:

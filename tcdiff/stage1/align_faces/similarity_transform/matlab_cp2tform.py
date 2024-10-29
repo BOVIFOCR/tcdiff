@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+
 """
 Created on Tue Jul 11 06:54:28 2017
 
@@ -71,28 +71,28 @@ def findNonreflectiveSimilarity(uv, xy, options=None):
     M = xy.shape[0]
     x = xy[:, 0].reshape((-1, 1))  # use reshape to keep a column vector
     y = xy[:, 1].reshape((-1, 1))  # use reshape to keep a column vector
-    # print('--->x, y:\n', x, y
+
 
     tmp1 = np.hstack((x, y, np.ones((M, 1)), np.zeros((M, 1))))
     tmp2 = np.hstack((y, -x, np.zeros((M, 1)), np.ones((M, 1))))
     X = np.vstack((tmp1, tmp2))
-    # print('--->X.shape: ', X.shape
-    # print('X:\n', X
+
+
 
     u = uv[:, 0].reshape((-1, 1))  # use reshape to keep a column vector
     v = uv[:, 1].reshape((-1, 1))  # use reshape to keep a column vector
     U = np.vstack((u, v))
-    # print('--->U.shape: ', U.shape
-    # print('U:\n', U
 
-    # We know that X * r = U
+
+
+
     if rank(X) >= 2 * K:
         r, _, _, _ = lstsq(X, U)
         r = np.squeeze(r)
     else:
         raise Exception('cp2tform:twoUniquePointsReq')
 
-    # print('--->r:\n', r
+
 
     sc = r[0]
     ss = r[1]
@@ -105,10 +105,10 @@ def findNonreflectiveSimilarity(uv, xy, options=None):
         [tx,  ty, 1]
     ])
 
-    # print('--->Tinv:\n', Tinv
+
 
     T = inv(Tinv)
-    # print('--->T:\n', T
+
 
     T[:, 2] = np.array([0, 0, 1])
 
@@ -119,21 +119,21 @@ def findSimilarity(uv, xy, options=None):
 
     options = {'K': 2}
 
-#    uv = np.array(uv)
-#    xy = np.array(xy)
 
-    # Solve for trans1
+
+
+
     trans1, trans1_inv = findNonreflectiveSimilarity(uv, xy, options)
 
-    # Solve for trans2
 
-    # manually reflect the xy data across the Y-axis
+
+
     xyR = xy
     xyR[:, 0] = -1 * xyR[:, 0]
 
     trans2r, trans2r_inv = findNonreflectiveSimilarity(uv, xyR, options)
 
-    # manually reflect the tform to undo the reflection done on xyR
+
     TreflectY = np.array([
         [-1, 0, 0],
         [0, 1, 0],
@@ -142,7 +142,7 @@ def findSimilarity(uv, xy, options=None):
 
     trans2 = np.dot(trans2r, TreflectY)
 
-    # Figure out if trans1 or trans2 is better
+
     xy1 = tformfwd(trans1, uv)
     norm1 = norm(xy1 - xy)
 
@@ -268,37 +268,37 @@ if __name__ == '__main__':
     x = [-1, 0, 4]
     y = [-1, -10, 4]
 
-    # In Matlab, run:
-    #
-    #   uv = [u'; v'];
-    #   xy = [x'; y'];
-    #   tform_sim=cp2tform(uv,xy,'similarity');
-    #
-    #   trans = tform_sim.tdata.T
-    #   ans =
-    #       -0.0764   -1.6190         0
-    #        1.6190   -0.0764         0
-    #       -3.2156    0.0290    1.0000
-    #   trans_inv = tform_sim.tdata.Tinv
-    #    ans =
-    #
-    #       -0.0291    0.6163         0
-    #       -0.6163   -0.0291         0
-    #       -0.0756    1.9826    1.0000
-    #    xy_m=tformfwd(tform_sim, u,v)
-    #
-    #    xy_m =
-    #
-    #       -3.2156    0.0290
-    #        1.1833   -9.9143
-    #        5.0323    2.8853
-    #    uv_m=tforminv(tform_sim, x,y)
-    #
-    #    uv_m =
-    #
-    #        0.5698    1.3953
-    #        6.0872    2.2733
-    #       -2.6570    4.3314
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     """
     u = [0, 6, -2]
     v = [0, 3, 5]

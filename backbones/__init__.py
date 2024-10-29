@@ -3,7 +3,7 @@ from .mobilefacenet import get_mbf
 
 
 def get_model(name, **kwargs):
-    # resnet
+
     if name == "r18_1x512":
         return iresnet18_1x512(False, **kwargs)
     elif name == "r18":
@@ -60,7 +60,7 @@ def get_model(name, **kwargs):
             num_heads=8, drop_path_rate=0.05, norm_layer="ln", mask_ratio=0.0)
     
     elif name == "vit_b":
-        # this is a feature
+
         num_features = kwargs.get("num_features", 512)
         from .vit import VisionTransformer
         return VisionTransformer(
@@ -68,7 +68,7 @@ def get_model(name, **kwargs):
             num_heads=8, drop_path_rate=0.1, norm_layer="ln", mask_ratio=0.1, using_checkpoint=True)
 
     elif name == "vit_b_dp005_mask_005":  # For WebFace42M
-        # this is a feature
+
         num_features = kwargs.get("num_features", 512)
         from .vit import VisionTransformer
         return VisionTransformer(
@@ -76,7 +76,7 @@ def get_model(name, **kwargs):
             num_heads=8, drop_path_rate=0.05, norm_layer="ln", mask_ratio=0.05, using_checkpoint=True)
 
     elif name == "vit_l_dp005_mask_005":  # For WebFace42M
-        # this is a feature
+
         num_features = kwargs.get("num_features", 512)
         from .vit import VisionTransformer
         return VisionTransformer(

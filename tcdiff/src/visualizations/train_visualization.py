@@ -16,7 +16,7 @@ import imageio
 
 def plot_diffusion(clean_image, pl_module, num_interval=5):
 
-    # clean_image = batch['image'][0:1]
+
     assert clean_image.ndim == 3
     clean_image = torch.unsqueeze(clean_image, 0)
     noise = torch.randn(clean_image.shape).to(clean_image.device)
@@ -34,8 +34,8 @@ def plot_diffusion(clean_image, pl_module, num_interval=5):
 def visualization_bundle(dataset, pl_module, save_root):
     generate_identity_style_mix_images(dataset, pl_module, num_img_per_subject=4, num_subjects=4,
                                        save_root=os.path.join(save_root, 'exploration1'))
-    # generate_identity_style_mix_images(dataset, pl_module, num_img_per_subject=4, num_subjects=8,
-    #                                    save_root=os.path.join(save_root, 'exploration2'))
+
+
 
     generate_interpolation(dataset, pl_module, num_img_per_subject=4, num_subjects=4,
                            mixing_method='label_interpolate',
@@ -82,7 +82,7 @@ def generate_identity_style_mix_images(dataset, pl_module, num_img_per_subject, 
         sub_extra_image = extra_image[i*num_img_per_subject: (i+1)*num_img_per_subject]
         sub_pred_images = pred_images[i*num_img_per_subject: (i+1)*num_img_per_subject]
 
-        # visual
+
         orig_grid = torchvision.utils.make_grid(sub_orig_images * 0.5 + 0.5, nrow=num_img_per_subject)
         orig_grid_uint8 = sample_visual.to_image_npy_uint8(orig_grid.detach().cpu().numpy().transpose(1,2,0))
         orig_text = prepare_text_img('Identity Examples', height=orig_grid_uint8.shape[0], width=240,)
@@ -185,7 +185,7 @@ def generate_random_identity_v1(dataset, pl_module, num_img_per_subject, num_sub
 
     all_label_embs = np.concatenate(all_label_embs, axis=0)
 
-    # get style
+
     style_batch = sample_visual.sample_images_for_vis(dataset, num_subjects=num_img_per_subject, num_img_per_subject=1)
     batch = {}
     batch['image'] = style_batch['image']
@@ -216,7 +216,7 @@ def generate_random_identity_v1(dataset, pl_module, num_img_per_subject, num_sub
         pred_images_grid_uint8 = sample_visual.to_image_npy_uint8(pred_images_grid.detach().cpu().numpy().transpose(1,2,0))
         sample_visual.save_uint8(pred_images_grid_uint8, path='{}/{}.jpg'.format(save_root, f'{i}.jpg'))
 
-    # fix others and change only one column
+
     select_indices = np.random.choice(len(all_label_embs), 8)
     rand_label_cond = np.stack([all_label_embs[rand_idx, n] for n, rand_idx in enumerate(select_indices)], axis=0)
     for j in range(all_label_embs.shape[1]):
@@ -279,7 +279,7 @@ def generate_random_identity_v2(dataset, pl_module, num_styles, save_root):
 
     all_label_embs, average_image = calculate_avg_emb_and_image(dataset, pl_module, save_path='/mckim/temp/calculate_avg_emb_and_image.pth')
 
-    # get style vectors
+
     style_batch = sample_visual.sample_images_for_vis(dataset, num_subjects=num_styles, num_img_per_subject=1)
     batch = {}
     batch['image'] = style_batch['image']
@@ -290,16 +290,16 @@ def generate_random_identity_v2(dataset, pl_module, num_styles, save_root):
     condition = pl_module.get_encoder_hidden_states(batch, batch_size=None)
     _, spatial = split_label_spatial(condition_type, condition_source, condition, pl_module=pl_module)
 
-    # save style iamges
+
     for i, image in enumerate(batch['image']):
         vis_image = image * 0.5 + 0.5
         cv2.imwrite(os.path.join(save_root, f'style_image_{i}.jpg'), vis_image.numpy().transpose(1,2,0)[:,:,::-1]*255)
 
-    # make random identity condition
+
     select_indices = np.random.choice(len(all_label_embs), 8)
     rand_label_cond = np.stack([all_label_embs[rand_idx, n] for n, rand_idx in enumerate(select_indices)], axis=0)
 
-    # fix others and change only one column
+
     result = {}
     for column_index in tqdm(range(all_label_embs.shape[1]), total=all_label_embs.shape[1]):
         if column_index not in result:
@@ -338,8 +338,8 @@ def generate_random_identity_v2(dataset, pl_module, num_styles, save_root):
     for style_index in style_indexes:
         for column_index in column_indexes:
             save_name = f"style:{style_index}_column:{column_index}.jpg"
-            # X: Time
-            # Y: N
+
+
             rows = []
             for time_idx, time in enumerate(times):
                 if time_idx % 5 == 0:

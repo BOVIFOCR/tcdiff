@@ -1,17 +1,17 @@
-# Copyright 2022 The HuggingFace Team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
 
-# limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 import warnings
@@ -72,8 +72,8 @@ class PNDMPipeline(DiffusionPipeline):
             `return_dict` is True, otherwise a `tuple. When returning a tuple, the first element is a list with the
             generated images.
         """
-        # For more information on the sampling method you can take a look at Algorithm 2 of
-        # the official paper: https://arxiv.org/pdf/2202.09778.pdf
+
+
 
         if "torch_device" in kwargs:
             device = kwargs.pop("torch_device")
@@ -82,12 +82,12 @@ class PNDMPipeline(DiffusionPipeline):
                 " Consider using `pipe.to(torch_device)` instead."
             )
 
-            # Set device as before (to be removed in 0.3.0)
+
             if device is None:
                 device = "cuda" if torch.cuda.is_available() else "cpu"
             self.to(device)
 
-        # Sample gaussian noise to begin loop
+
         image = torch.randn(
             (batch_size, self.unet.in_channels, self.unet.sample_size, self.unet.sample_size),
             generator=generator,

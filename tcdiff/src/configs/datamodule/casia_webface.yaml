@@ -16,7 +16,7 @@ orig_augmentations1: ['flip:1.0']
 orig_augmentations2: []
 record_file_type: 'image'
 first_stage_config: ${model.first_stage_config}
-return_identity_image: 'dcface/pretrained_models/simlist_ir_101_adaface_webface4m_faces_webface_112x112.pth'
+return_identity_image: 'tcdiff/pretrained_models/simlist_ir_101_adaface_webface4m_faces_webface_112x112.pth'
 return_face_contour: ''
 trim_outlier: false
 

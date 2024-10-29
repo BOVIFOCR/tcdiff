@@ -10,8 +10,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 def log_txt_as_img(wh, xc, size=10):
-    # wh a tuple of (width, height)
-    # xc a list of captions to plot
+
+
     b = len(xc)
     txts = list()
     for bi in range(b):
@@ -89,9 +89,9 @@ def get_obj_from_str(string, reload=False):
 
 
 def _do_parallel_data_prefetch(func, Q, data, idx, idx_to_fn=False):
-    # create dummy dataset instance
 
-    # run prefetching
+
+
     if idx_to_fn:
         res = func(data, worker_id=idx)
     else:
@@ -103,10 +103,10 @@ def _do_parallel_data_prefetch(func, Q, data, idx, idx_to_fn=False):
 def parallel_data_prefetch(
         func: callable, data, n_proc, target_data_type="ndarray", cpu_intensive=True, use_worker_id=False
 ):
-    # if target_data_type not in ["ndarray", "list"]:
-    #     raise ValueError(
-    #         "Data, which is passed to parallel_data_prefetch has to be either of type list or ndarray."
-    #     )
+
+
+
+
     if isinstance(data, np.ndarray) and target_data_type == "list":
         raise ValueError("list expected but function got ndarray.")
     elif isinstance(data, abc.Iterable):
@@ -130,7 +130,7 @@ def parallel_data_prefetch(
     else:
         Q = Queue(1000)
         proc = Thread
-    # spawn processes
+
     if target_data_type == "ndarray":
         arguments = [
             [func, Q, part, i, use_worker_id]
@@ -153,7 +153,7 @@ def parallel_data_prefetch(
         p = proc(target=_do_parallel_data_prefetch, args=arguments[i])
         processes += [p]
 
-    # start processes
+
     print(f"Start prefetching...")
     import time
 
@@ -165,7 +165,7 @@ def parallel_data_prefetch(
 
         k = 0
         while k < n_proc:
-            # get result
+
             res = Q.get()
             if res == "Done":
                 k += 1
@@ -187,7 +187,7 @@ def parallel_data_prefetch(
         if not isinstance(gather_res[0], np.ndarray):
             return np.concatenate([np.asarray(r) for r in gather_res], axis=0)
 
-        # order outputs
+
         return np.concatenate(gather_res, axis=0)
     elif target_data_type == 'list':
         out = []

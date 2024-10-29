@@ -1,16 +1,16 @@
-# Copyright 2022 The HuggingFace Team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 """
 Import utilities: Utilities related to imports and our lazy inits.
 """
@@ -24,7 +24,7 @@ from packaging import version
 from . import logging
 
 
-# The package importlib_metadata is in a different place, depending on the python version.
+
 if sys.version_info < (3, 8):
     import importlib_metadata
 else:
@@ -72,7 +72,7 @@ if USE_TF in ENV_VARS_TRUE_AND_AUTO_VALUES and USE_TORCH not in ENV_VARS_TRUE_VA
             "tensorflow-aarch64",
         )
         _tf_version = None
-        # For the metadata, we have to look for both tensorflow and tensorflow-cpu
+
         for pkg in candidates:
             try:
                 _tf_version = importlib_metadata.version(pkg)
@@ -140,7 +140,7 @@ _onnx_available = importlib.util.find_spec("onnxruntime") is not None
 if _onnx_available:
     candidates = ("onnxruntime", "onnxruntime-gpu", "onnxruntime-directml", "onnxruntime-openvino")
     _onnxruntime_version = None
-    # For the metadata, we have to look for both onnxruntime and onnxruntime-gpu
+
     for pkg in candidates:
         try:
             _onnxruntime_version = importlib_metadata.version(pkg)
@@ -196,49 +196,49 @@ def is_scipy_available():
     return _scipy_available
 
 
-# docstyle-ignore
+
 FLAX_IMPORT_ERROR = """
 {0} requires the FLAX library but it was not found in your environment. Checkout the instructions on the
 installation page: https://github.com/google/flax and follow the ones that match your environment.
 """
 
-# docstyle-ignore
+
 INFLECT_IMPORT_ERROR = """
 {0} requires the inflect library but it was not found in your environment. You can install it with pip: `pip install
 inflect`
 """
 
-# docstyle-ignore
+
 PYTORCH_IMPORT_ERROR = """
 {0} requires the PyTorch library but it was not found in your environment. Checkout the instructions on the
 installation page: https://pytorch.org/get-started/locally/ and follow the ones that match your environment.
 """
 
-# docstyle-ignore
+
 ONNX_IMPORT_ERROR = """
 {0} requires the onnxruntime library but it was not found in your environment. You can install it with pip: `pip
 install onnxruntime`
 """
 
-# docstyle-ignore
+
 SCIPY_IMPORT_ERROR = """
 {0} requires the scipy library but it was not found in your environment. You can install it with pip: `pip install
 scipy`
 """
 
-# docstyle-ignore
+
 TENSORFLOW_IMPORT_ERROR = """
 {0} requires the TensorFlow library but it was not found in your environment. Checkout the instructions on the
 installation page: https://www.tensorflow.org/install and follow the ones that match your environment.
 """
 
-# docstyle-ignore
+
 TRANSFORMERS_IMPORT_ERROR = """
 {0} requires the transformers library but it was not found in your environment. You can install it with pip: `pip
 install transformers`
 """
 
-# docstyle-ignore
+
 UNIDECODE_IMPORT_ERROR = """
 {0} requires the unidecode library but it was not found in your environment. You can install it with pip: `pip install
 Unidecode`

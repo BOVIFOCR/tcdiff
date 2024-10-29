@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 import warnings
 from typing import Optional, Tuple, Union
 
@@ -60,7 +60,7 @@ class ScoreSdeVePipeline(DiffusionPipeline):
                 " Consider using `pipe.to(torch_device)` instead."
             )
 
-            # Set device as before (to be removed in 0.3.0)
+
             if device is None:
                 device = "cuda" if torch.cuda.is_available() else "cpu"
             self.to(device)
@@ -79,12 +79,12 @@ class ScoreSdeVePipeline(DiffusionPipeline):
         for i, t in enumerate(self.progress_bar(self.scheduler.timesteps)):
             sigma_t = self.scheduler.sigmas[i] * torch.ones(shape[0], device=self.device)
 
-            # correction step
+
             for _ in range(self.scheduler.config.correct_steps):
                 model_output = self.unet(sample, sigma_t).sample
                 sample = self.scheduler.step_correct(model_output, sample, generator=generator).prev_sample
 
-            # prediction step
+
             model_output = model(sample, sigma_t).sample
             output = self.scheduler.step_pred(model_output, t, sample, generator=generator)
 

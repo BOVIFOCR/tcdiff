@@ -132,7 +132,7 @@ def render_condition(batch, pl_module, sampler='ddim', between_zero_and_one=True
     pred_images = pred_result.images
     pred_images = np.clip(pred_images, 0, 1)
     if not between_zero_and_one:
-        # between -1 and 1
+
         pred_images = (pred_images - 0.5) / 0.5
 
     if return_x0_intermediates:

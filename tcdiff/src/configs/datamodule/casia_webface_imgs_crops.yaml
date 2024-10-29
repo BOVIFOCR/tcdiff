@@ -1,7 +1,5 @@
-# _target_: src.datamodules.face_datamodule.FaceDataModule   # original
-_target_: src.datamodules.face_datamodule_with_3DMM_consistency_constraints.FaceDataModuleWith3DMMConsistencyConstraints   # Bernardo
+_target_: src.datamodules.face_datamodule_with_3DMM_consistency_constraints.FaceDataModuleWith3DMMConsistencyConstraints
 _partial_: true
-# dataset_name: 'faces_webface_112x112'   # original
 dataset_name: 'imgs_crops_112x112'
 data_dir: ${paths.data_dir}
 img_size: 112
@@ -18,7 +16,7 @@ orig_augmentations1: ['flip:1.0']
 orig_augmentations2: []
 record_file_type: 'image'
 first_stage_config: ${model.first_stage_config}
-return_identity_image: 'dcface/pretrained_models/simlist_ir_101_adaface_webface4m_faces_webface_112x112.pth'
+return_identity_image: 'tcdiff/pretrained_models/simlist_ir_101_adaface_webface4m_faces_webface_112x112.pth'
 return_face_contour: ''
 trim_outlier: false
 

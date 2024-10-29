@@ -1,18 +1,18 @@
-# coding=utf-8
-# Copyright 2022 The HuggingFace Inc. team.
-# Copyright (c) 2022, NVIDIA CORPORATION.  All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import importlib
 import inspect
@@ -94,33 +94,33 @@ class DiffusionPipeline(ConfigMixin):
     config_name = "model_index.json"
 
     def register_modules(self, **kwargs):
-        # import it here to avoid circular import
+
         from diffusers import pipelines
 
         for name, module in kwargs.items():
-            # retrieve library
+
             library = module.__module__.split(".")[0]
 
-            # check if the module is a pipeline module
+
             pipeline_dir = module.__module__.split(".")[-2]
             path = module.__module__.split(".")
             is_pipeline_module = pipeline_dir in path and hasattr(pipelines, pipeline_dir)
 
-            # if library is not in LOADABLE_CLASSES, then it is a custom module.
-            # Or if it's a pipeline module, then the module is inside the pipeline
-            # folder so we set the library to module name.
+
+
+
             if library not in LOADABLE_CLASSES or is_pipeline_module:
                 library = pipeline_dir
 
-            # retrieve class_name
+
             class_name = module.__class__.__name__
 
             register_dict = {name: (library, class_name)}
 
-            # save model index config
+
             self.register_to_config(**register_dict)
 
-            # set models
+
             setattr(self, name, module)
 
     def save_pretrained(self, save_directory: Union[str, os.PathLike]):
@@ -145,13 +145,13 @@ class DiffusionPipeline(ConfigMixin):
             model_cls = sub_model.__class__
 
             save_method_name = None
-            # search for the model's base class in LOADABLE_CLASSES
+
             for library_name, library_classes in LOADABLE_CLASSES.items():
                 library = importlib.import_module(library_name)
                 for base_class, save_load_methods in library_classes.items():
                     class_candidate = getattr(library, base_class)
                     if issubclass(model_cls, class_candidate):
-                        # if we found a suitable base class in LOADABLE_CLASSES then grab its save method
+
                         save_method_name = save_load_methods[0]
                         break
                 if save_method_name is not None:
@@ -286,8 +286,8 @@ class DiffusionPipeline(ConfigMixin):
         provider = kwargs.pop("provider", None)
         sess_options = kwargs.pop("sess_options", None)
 
-        # 1. Download the checkpoints and configs
-        # use snapshot download here to get it working from from_pretrained
+
+
         if not os.path.isdir(pretrained_model_name_or_path):
             config_dict = cls.get_config_dict(
                 pretrained_model_name_or_path,
@@ -298,12 +298,12 @@ class DiffusionPipeline(ConfigMixin):
                 use_auth_token=use_auth_token,
                 revision=revision,
             )
-            # make sure we only download sub-folders and `diffusers` filenames
+
             folder_names = [k for k in config_dict.keys() if not k.startswith("_")]
             allow_patterns = [os.path.join(k, "*") for k in folder_names]
             allow_patterns += [WEIGHTS_NAME, SCHEDULER_CONFIG_NAME, CONFIG_NAME, ONNX_WEIGHTS_NAME, cls.config_name]
 
-            # download all allow_patterns
+
             cached_folder = snapshot_download(
                 pretrained_model_name_or_path,
                 cache_dir=cache_dir,
@@ -319,17 +319,17 @@ class DiffusionPipeline(ConfigMixin):
 
         config_dict = cls.get_config_dict(cached_folder)
 
-        # 2. Load the pipeline class, if using custom module then load it from the hub
-        # if we load from explicit class, let's use it
+
+
         if cls != DiffusionPipeline:
             pipeline_class = cls
         else:
             diffusers_module = importlib.import_module(cls.__module__.split(".")[0])
             pipeline_class = getattr(diffusers_module, config_dict["_class_name"])
 
-        # some modules can be passed directly to the init
-        # in this case they are already instantiated in `kwargs`
-        # extract them here
+
+
+
         expected_modules = set(inspect.signature(pipeline_class.__init__).parameters.keys())
         passed_class_obj = {k: kwargs.pop(k) for k in expected_modules if k in kwargs}
 
@@ -337,21 +337,21 @@ class DiffusionPipeline(ConfigMixin):
 
         init_kwargs = {}
 
-        # import it here to avoid circular import
+
         from diffusers import pipelines
 
-        # 3. Load each module in the pipeline
+
         for name, (library_name, class_name) in init_dict.items():
-            # 3.1 - now that JAX/Flax is an official framework of the library, we might load from Flax names
+
             if class_name.startswith("Flax"):
                 class_name = class_name[4:]
 
             is_pipeline_module = hasattr(pipelines, library_name)
             loaded_sub_model = None
 
-            # if the model is in a pipeline module, then we load it from the pipeline
+
             if name in passed_class_obj:
-                # 1. check that passed_class_obj has correct parent class
+
                 if not is_pipeline_module:
                     library = importlib.import_module(library_name)
                     class_obj = getattr(library, class_name)
@@ -374,7 +374,7 @@ class DiffusionPipeline(ConfigMixin):
                         " has the correct type"
                     )
 
-                # set passed class object
+
                 loaded_sub_model = passed_class_obj[name]
             elif is_pipeline_module:
                 pipeline_module = getattr(pipelines, library_name)
@@ -382,7 +382,7 @@ class DiffusionPipeline(ConfigMixin):
                 importable_classes = ALL_IMPORTABLE_CLASSES
                 class_candidates = {c: class_obj for c in importable_classes.keys()}
             else:
-                # else we just import it from the library.
+
                 library = importlib.import_module(library_name)
                 class_obj = getattr(library, class_name)
                 importable_classes = LOADABLE_CLASSES[library_name]
@@ -403,16 +403,16 @@ class DiffusionPipeline(ConfigMixin):
                     loading_kwargs["provider"] = provider
                     loading_kwargs["sess_options"] = sess_options
 
-                # check if the module is in a subdirectory
+
                 if os.path.isdir(os.path.join(cached_folder, name)):
                     loaded_sub_model = load_method(os.path.join(cached_folder, name), **loading_kwargs)
                 else:
-                    # else load from the root directory
+
                     loaded_sub_model = load_method(cached_folder, **loading_kwargs)
 
             init_kwargs[name] = loaded_sub_model  # UNet(...), # DiffusionSchedule(...)
 
-        # 4. Instantiate the pipeline
+
         model = pipeline_class(**init_kwargs)
         return model
 

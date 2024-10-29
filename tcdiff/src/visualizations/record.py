@@ -111,8 +111,8 @@ class RecordDatasetWithIndex(Dataset):
         img = img[:,:,:3]
         img = Image.fromarray(img)
         img = self.transform(img)
-        # from utils import img_utils
-        # cv2.imwrite('/mckim/temp/temp.png', img_utils.tensor_to_numpy(img))
+
+
         return img, idx
 
 def prepare_record_dataloader(img_list, record_dataset, batch_size, num_workers=0):

@@ -89,7 +89,7 @@ class LossAwareSampler(ScheduleSampler):
             th.tensor([len(local_ts)], dtype=th.int32, device=local_ts.device),
         )
 
-        # Pad all_gather batches to be the maximum batch size.
+
         batch_sizes = [x.item() for x in batch_sizes]
         max_bs = max(batch_sizes)
 
@@ -143,7 +143,7 @@ class LossSecondMomentResampler(LossAwareSampler):
     def update_with_all_losses(self, ts, losses):
         for t, loss in zip(ts, losses):
             if self._loss_counts[t] == self.history_per_term:
-                # Shift out the oldest loss term.
+
                 self._loss_history[t, :-1] = self._loss_history[t, 1:]
                 self._loss_history[t, -1] = loss
             else:

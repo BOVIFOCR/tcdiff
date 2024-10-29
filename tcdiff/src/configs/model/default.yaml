@@ -4,7 +4,7 @@ unet_config:
   params:
     condition_type: null
     condition_source: null
-    pretrained_model_path: ${paths.repo_root}/dcface/pretrained_models/ffhq_10m.pt
+    pretrained_model_path: ${paths.repo_root}/tcdiff/pretrained_models/ffhq_10m.pt
     gradient_checkpointing: True
     image_size: 32
     in_channels: 3

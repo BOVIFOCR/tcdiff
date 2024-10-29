@@ -40,7 +40,7 @@ def maybe_make_train_rec(image_dataset_path, hparams, pl_module):
     if os.path.isfile(os.path.join(feature_saving_root, DONE_NAME)):
         return None
 
-    # make train rec
+
     data_train = face_dataset.make_dataset(image_dataset_path,
                                            deterministic=False,
                                            img_size=hparams.img_size,

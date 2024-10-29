@@ -1,17 +1,17 @@
-# coding=utf-8
-# Copyright 2022 The HuggingFace Inc. team.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 import os
@@ -73,7 +73,7 @@ def init_git_repo(args, at_init: bool = False):
         )
     except EnvironmentError:
         if args.overwrite_output_dir and at_init:
-            # Try again after wiping output_dir
+
             shutil.rmtree(args.output_dir)
             repo = Repository(
                 args.output_dir,
@@ -85,7 +85,7 @@ def init_git_repo(args, at_init: bool = False):
 
     repo.git_pull()
 
-    # By default, ignore the checkpoint folders
+
     if not os.path.exists(os.path.join(args.output_dir, ".gitignore")):
         with open(os.path.join(args.output_dir, ".gitignore"), "w", encoding="utf-8") as writer:
             writer.writelines(["checkpoint-*/"])
@@ -125,11 +125,11 @@ def push_to_hub(
     logger.info(f"Saving pipeline checkpoint to {output_dir}")
     pipeline.save_pretrained(output_dir)
 
-    # Only push from one node.
+
     if hasattr(args, "local_rank") and args.local_rank not in [-1, 0]:
         return
 
-    # Cancel any async push in progress if blocking=True. The commits will all be pushed together.
+
     if (
         blocking
         and len(repo.command_queue) > 0
@@ -139,7 +139,7 @@ def push_to_hub(
         repo.command_queue[-1]._process.kill()
 
     git_head_commit_url = repo.push_to_hub(commit_message=commit_message, blocking=blocking, auto_lfs_prune=True)
-    # push separately the model card to be independent from the rest of the model
+
     create_model_card(args, model_name=model_name)
     try:
         repo.push_to_hub(commit_message="update model card README.md", blocking=blocking, auto_lfs_prune=True)

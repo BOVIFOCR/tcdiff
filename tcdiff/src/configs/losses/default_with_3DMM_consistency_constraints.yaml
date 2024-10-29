@@ -8,7 +8,7 @@ identity_consistency_loss_center_source: center
 identity_consistency_loss_time_cut: 0.0
 identity_consistency_loss_weight_start_bias: 0.0
 
-threeDMM_consistency_loss_lambda: 0.0    # Bernardo
+threeDMM_consistency_loss_lambda: 0.0
 
 latent_mixup_loss_lambda: 0.0
 latent_mixup_loss_name: v1

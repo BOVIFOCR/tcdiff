@@ -63,8 +63,8 @@ def master_params_to_model_params(param_groups_and_shapes, master_params):
     """
     Copy the master parameter data back into the model parameters.
     """
-    # Without copying to a list, if a generator is passed, this will
-    # silently not copy any parameters.
+
+
     for master_param, (param_group, _) in zip(master_params, param_groups_and_shapes):
         for (_, param), unflat_master_param in zip(
             param_group, unflatten_master_params(param_group, master_param.view(-1))
@@ -129,7 +129,7 @@ def zero_master_grads(master_params):
 
 def zero_grad(model_params):
     for param in model_params:
-        # Taken from https://pytorch.org/docs/stable/_modules/torch/optim/optimizer.html#Optimizer.add_param_group
+
         if param.grad is not None:
             param.grad.detach_()
             param.grad.zero_()

@@ -143,7 +143,7 @@ class DualCondUpBlock2D(nn.Module):
 
     def forward(self, hidden_states, res_hidden_states_tuple, temb=None, condition=None):
         for resnet in self.resnets:
-            # pop res hidden states
+
             res_hidden_states = res_hidden_states_tuple[-1]
             res_hidden_states_tuple = res_hidden_states_tuple[:-1]
             hidden_states = torch.cat([hidden_states, res_hidden_states], dim=1)
@@ -255,8 +255,8 @@ class DualCondResnetBlock2D(nn.Module):
     def forward(self, x, temb, condition=None):
         hidden_states = x
 
-        # make sure hidden states is in float32
-        # when running in half-precision
+
+
         hidden_states = self.norm1(hidden_states).type(hidden_states.dtype)
         hidden_states = self.nonlinearity(hidden_states)
 
@@ -277,8 +277,8 @@ class DualCondResnetBlock2D(nn.Module):
             condition = self.add_cond_proj(self.nonlinearity(condition))[:, :, None, None]
             hidden_states = hidden_states + condition
 
-        # make sure hidden states is in float32
-        # when running in half-precision
+
+
         hidden_states = self.norm2(hidden_states).type(hidden_states.dtype)
         hidden_states = self.nonlinearity(hidden_states)
 
@@ -453,7 +453,7 @@ class ConcatAttnUpBlock2D(nn.Module):
             raise ValueError('')
 
         for resnet, attn in zip(self.resnets, self.attentions):
-            # pop res hidden states
+
             res_hidden_states = res_hidden_states_tuple[-1]
             res_hidden_states_tuple = res_hidden_states_tuple[:-1]
             hidden_states = torch.cat([hidden_states, res_hidden_states], dim=1)
@@ -491,7 +491,7 @@ class DualCondUNetMidBlock2D(nn.Module):
         self.attention_type = attention_type
         resnet_groups = resnet_groups if resnet_groups is not None else min(in_channels // 4, 32)
 
-        # there is always at least one resnet
+
         resnets = [
             DualCondResnetBlock2D(
                 in_channels=in_channels,

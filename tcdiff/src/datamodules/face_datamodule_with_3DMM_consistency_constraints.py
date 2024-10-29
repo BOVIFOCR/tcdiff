@@ -2,8 +2,7 @@ import os.path
 from typing import Any, Dict, Optional, Tuple
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import ConcatDataset, DataLoader, Dataset, random_split
-# from src.dataset import face_dataset                                   # original
-from src.dataset import face_dataset_with_3DMM_consistency_constraints   # Bernardo
+from src.dataset import face_dataset_with_3DMM_consistency_constraints
 from src.dataset import encoded_dataset
 
 class FaceDataModuleWith3DMMConsistencyConstraints(LightningDataModule):
@@ -15,8 +14,8 @@ class FaceDataModuleWith3DMMConsistencyConstraints(LightningDataModule):
     ):
         super().__init__()
 
-        # this line allows to access init params with 'self.hparams' attribute
-        # also ensures init params will be stored in ckpt
+
+
         self.save_hyperparameters(logger=False)
 
         self.data_train: Optional[Dataset] = None
@@ -33,12 +32,11 @@ class FaceDataModuleWith3DMMConsistencyConstraints(LightningDataModule):
             encoded_dataset.maybe_make_train_rec(image_dataset_path, self.hparams, self.trainer.model)
 
     def setup(self, stage: Optional[str] = None):
-        # load and split datasets only if not loaded already
+
         if not self.data_train and not self.data_val and not self.data_test:
             dataset_path = os.path.join(self.hparams.data_dir, self.hparams.dataset_name)
             encoded_rec = encoded_dataset.maybe_load_train_rec(dataset_path, self.hparams)
             
-            # self.data_train = face_dataset.make_dataset(dataset_path,
             self.data_train = face_dataset_with_3DMM_consistency_constraints.make_dataset(dataset_path,
                                                         deterministic=False,
                                                         img_size=self.hparams.img_size,
@@ -51,7 +49,6 @@ class FaceDataModuleWith3DMMConsistencyConstraints(LightningDataModule):
                                                         return_face_contour=self.hparams.return_face_contour,
                                                         trim_outlier=self.hparams.trim_outlier
                                                         )
-            # self.data_val = face_dataset.make_dataset(dataset_path,
             self.data_val = face_dataset_with_3DMM_consistency_constraints.make_dataset(dataset_path,
                                                         deterministic=True,
                                                         img_size=self.hparams.img_size,

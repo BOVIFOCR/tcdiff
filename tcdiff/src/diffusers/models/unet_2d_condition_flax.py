@@ -93,7 +93,7 @@ class FlaxUNet2DConditionModel(nn.Module, FlaxModelMixin, ConfigMixin):
     freq_shift: int = 0
 
     def init_weights(self, rng: jax.random.PRNGKey) -> FrozenDict:
-        # init input tensors
+
         sample_shape = (1, self.in_channels, self.sample_size, self.sample_size)
         sample = jnp.zeros(sample_shape, dtype=jnp.float32)
         timesteps = jnp.ones((1,), dtype=jnp.int32)
@@ -108,7 +108,7 @@ class FlaxUNet2DConditionModel(nn.Module, FlaxModelMixin, ConfigMixin):
         block_out_channels = self.block_out_channels
         time_embed_dim = block_out_channels[0] * 4
 
-        # input
+
         self.conv_in = nn.Conv(
             block_out_channels[0],
             kernel_size=(3, 3),
@@ -117,11 +117,11 @@ class FlaxUNet2DConditionModel(nn.Module, FlaxModelMixin, ConfigMixin):
             dtype=self.dtype,
         )
 
-        # time
+
         self.time_proj = FlaxTimesteps(block_out_channels[0], freq_shift=self.config.freq_shift)
         self.time_embedding = FlaxTimestepEmbedding(time_embed_dim, dtype=self.dtype)
 
-        # down
+
         down_blocks = []
         output_channel = block_out_channels[0]
         for i, down_block_type in enumerate(self.down_block_types):
@@ -152,7 +152,7 @@ class FlaxUNet2DConditionModel(nn.Module, FlaxModelMixin, ConfigMixin):
             down_blocks.append(down_block)
         self.down_blocks = down_blocks
 
-        # mid
+
         self.mid_block = FlaxUNetMidBlock2DCrossAttn(
             in_channels=block_out_channels[-1],
             dropout=self.dropout,
@@ -160,7 +160,7 @@ class FlaxUNet2DConditionModel(nn.Module, FlaxModelMixin, ConfigMixin):
             dtype=self.dtype,
         )
 
-        # up
+
         up_blocks = []
         reversed_block_out_channels = list(reversed(block_out_channels))
         output_channel = reversed_block_out_channels[0]
@@ -197,7 +197,7 @@ class FlaxUNet2DConditionModel(nn.Module, FlaxModelMixin, ConfigMixin):
             prev_output_channel = output_channel
         self.up_blocks = up_blocks
 
-        # out
+
         self.conv_norm_out = nn.GroupNorm(num_groups=32, epsilon=1e-5)
         self.conv_out = nn.Conv(
             self.out_channels,
@@ -231,7 +231,7 @@ class FlaxUNet2DConditionModel(nn.Module, FlaxModelMixin, ConfigMixin):
             [`~models.unet_2d_condition_flax.FlaxUNet2DConditionOutput`] if `return_dict` is True, otherwise a `tuple`.
             When returning a tuple, the first element is the sample tensor.
         """
-        # 1. time
+
         if not isinstance(timesteps, jnp.ndarray):
             timesteps = jnp.array([timesteps], dtype=jnp.int32)
         elif isinstance(timesteps, jnp.ndarray) and len(timesteps.shape) == 0:
@@ -241,11 +241,11 @@ class FlaxUNet2DConditionModel(nn.Module, FlaxModelMixin, ConfigMixin):
         t_emb = self.time_proj(timesteps)
         t_emb = self.time_embedding(t_emb)
 
-        # 2. pre-process
+
         sample = jnp.transpose(sample, (0, 2, 3, 1))
         sample = self.conv_in(sample)
 
-        # 3. down
+
         down_block_res_samples = (sample,)
         for down_block in self.down_blocks:
             if isinstance(down_block, FlaxCrossAttnDownBlock2D):
@@ -254,10 +254,10 @@ class FlaxUNet2DConditionModel(nn.Module, FlaxModelMixin, ConfigMixin):
                 sample, res_samples = down_block(sample, t_emb, deterministic=not train)
             down_block_res_samples += res_samples
 
-        # 4. mid
+
         sample = self.mid_block(sample, t_emb, encoder_hidden_states, deterministic=not train)
 
-        # 5. up
+
         for up_block in self.up_blocks:
             res_samples = down_block_res_samples[-(self.layers_per_block + 1) :]
             down_block_res_samples = down_block_res_samples[: -(self.layers_per_block + 1)]
@@ -272,7 +272,7 @@ class FlaxUNet2DConditionModel(nn.Module, FlaxModelMixin, ConfigMixin):
             else:
                 sample = up_block(sample, temb=t_emb, res_hidden_states_tuple=res_samples, deterministic=not train)
 
-        # 6. post-process
+
         sample = self.conv_norm_out(sample)
         sample = nn.silu(sample)
         sample = self.conv_out(sample)

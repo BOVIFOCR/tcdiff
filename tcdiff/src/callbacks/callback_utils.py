@@ -39,7 +39,7 @@ def make_fullgen_dir_name(data_params):
            f'_num_extra:{fullgen_num_extra_subject}' \
            f'_num_img:{datagen_num_img_per_subj}' \
            f'_mixing:{fullgen_mixing_method}'
-    # example: stage:fullgen_casia_webface_img_size:112_num_train:10_num_extra:10_num_img:8_mixing:label_interpolate
+
     return name
 
 def get_label(path):
@@ -71,7 +71,7 @@ def copy_images_and_clear_cache_dir(pl_module, datagen_save_dir,
     print('length val_stage_save_images', len(val_stage_save_images))
     print('length test_stage_save_images', len(test_stage_save_images))
 
-    # make merged visual and save
+
     for save_images, name in zip([val_stage_save_images, test_stage_save_images], [val_name, test_name]):
         save_images = pd.DataFrame(save_images, columns=['full_path'])
         save_images['same_label'] = save_images['full_path'].apply(os.path.dirname)
@@ -112,7 +112,7 @@ def copy_images_and_clear_fullgen_dir(fullgen_cache_root, pl_module,
 
     print('length val_stage_save_images', len(save_images))
 
-    # make merged visual and save
+
     save_images = pd.DataFrame(save_images, columns=['full_path'])
     save_images['same_label'] = save_images['full_path'].apply(os.path.dirname)
     same_label_image_groups = save_images.groupby('same_label')['full_path'].apply(list)
