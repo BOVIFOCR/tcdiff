@@ -91,7 +91,7 @@ multidict==6.0.4
 mxnet==1.9.1
 networkx==2.5
 nodeenv==1.8.0
-numexpr==2.8.1
+numexpr==2.8.5
 numpy==1.24.2
 oauthlib==3.2.0
 omegaconf==2.3.0
