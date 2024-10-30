@@ -4,10 +4,42 @@
 > Bernardo Biesseck, Pedro Vidal, Luiz Coelho, Roger Granada, David Menotti </br>
 > In SIBGRAPI 2024 </br>
 
-[Paper](assets/TCDiff_2024.pdf)
+[Paper](assets/TCDiff_2024.pdf) &nbsp; &nbsp; [Arxiv](https://arxiv.org/abs/2409.03600)
 
 <img src="assets/face_mixer.png" alt="image" width="400" height="auto">
 We propose a Triple Condition Diffusion Model (TCDiff) to improve face style transfer from real to synthetic faces through 2D and 3D facial constraints, enhancing face identity consistency while keeping the necessary high intra-class variance for training face recognition models with synthetic data.
 
 </br></br>
-### UNDER CONSTRUCTION
+### 1. Main requirements
+- Python==3.8
+- CUDA==11.2
+- numpy==1.24.2
+- mxnet==1.9.1
+- torch>=2.2.0
+- torchvision==0.12.0
+- pytorch-lightning==1.7.1
+- opencv-python>=4.8.1.78
+
+### 2. Create environment
+```
+CONDA_ENV=tcdiff
+conda create -y --name $CONDA_ENV python=3.9
+conda activate $CONDA_ENV
+
+conda env config vars set CUDA_HOME="/usr/local/cuda-11.2"; conda deactivate; conda activate $CONDA_ENV
+conda env config vars set LD_LIBRARY_PATH="$CUDA_HOME/lib64"; conda deactivate; conda activate $CONDA_ENV
+conda env config vars set PATH="$CUDA_HOME:$CUDA_HOME/bin:$LD_LIBRARY_PATH:$PATH"; conda deactivate; conda activate $CONDA_ENV
+```
+
+### 3. Clone this repository and install requirements
+```
+git clone https://github.com/BOVIFOCR/tcdiff.git
+cd tcdiff
+./install.sh   # install dependencies and download needed pre-trained models
+```
+
+### 4. Train model
+```
+cd tcdiff
+bash src/scripts/train_with_3DMM_consistency_constraints.sh
+```
