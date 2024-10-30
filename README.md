@@ -43,3 +43,4 @@ cd tcdiff
 cd tcdiff
 bash src/scripts/train_with_3DMM_consistency_constraints.sh
 ```
+Model `.ckpt` will be saved at folder `experiments_WITH_3DMM_CONSISTENCY_CONSTRAINTS/tcdiff/checkpoints/`
