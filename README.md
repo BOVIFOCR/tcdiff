@@ -43,3 +43,8 @@ cd tcdiff
 cd tcdiff
 bash src/scripts/train_with_3DMM_consistency_constraints.sh
 ```
+Model `.ckpt` will be saved at folder `experiments_WITH_3DMM_CONSISTENCY_CONSTRAINTS/tcdiff/checkpoints/`
+
+### 5. Create new synthetic face dataset
+For simplicity, we provide here the 10k synthetic identities generated and used by [DCFace](https://openaccess.thecvf.com/content/CVPR2023/papers/Kim_DCFace_Synthetic_Face_Generation_With_Dual_Condition_Diffusion_Model_CVPR_2023_paper.pdf)
+- [10k synthetic identities](https://www.dropbox.com/scl/fi/4enrbhdpok4cchtzk468m/dcface_10000_synthetic_ids.zip?rlkey=gayi92laaychxp4a6ok8axjde&st=psa6rezs&dl=0)
