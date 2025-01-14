@@ -130,6 +130,9 @@ debug.sh
 
 .hydra/
 
+*.png
+
+
 tcdiff/wandb
 experiments_WITH_3DMM_CONSISTENCY_CONSTRAINTS/
 tcdiff/src/MICA/demo/output
