@@ -114,8 +114,9 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('--ckpt_path', type=str, default='model.ckpt')
     parser.add_argument('--seed', type=int, default=123)
-    parser.add_argument('--imgs', type=str, default='/path/to/some/img.png')
-    
+    parser.add_argument('--imgs', type=str, default='/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112')
+    parser.add_argument('--start-idx', type=int, default=0)
+
     args = parser.parse_args()
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -150,42 +151,49 @@ def main():
 
     total_elapsed_time = 0.0
     for idx_path, path_img in enumerate(imgs_paths):
-        start_time = time.time()
-        print(f'{idx_path}/{len(imgs_paths)-1} - Computing style features')
-        print(f'path_img: {path_img}')
-        img = load_normalize_img(path_img)
-        id_feat_img, id_cross_att_img, spatial_img, ext_mapping_img, style_img = get_face_style_embedding(args, pl_module, img)
-        
-        output_path_dir = os.path.dirname(path_img.replace(args.imgs, output_path))
-        print(f'output_path_dir: {output_path_dir}')
-        os.makedirs(output_path_dir, exist_ok=True)
+        if idx_path >= args.start_idx:
+            start_time = time.time()
+            print(f'{idx_path}/{len(imgs_paths)} - Computing style features')
+            print(f'path_img: {path_img}')
+            img = load_normalize_img(path_img)
+            id_feat_img, id_cross_att_img, spatial_img, ext_mapping_img, style_img = get_face_style_embedding(args, pl_module, img)
+            
+            output_path_dir = os.path.dirname(path_img.replace(args.imgs, output_path))
+            print(f'output_path_dir: {output_path_dir}')
+            os.makedirs(output_path_dir, exist_ok=True)
 
-        img_name, img_ext = os.path.splitext(os.path.basename(path_img))
-        output_path_id_feat      = os.path.join(output_path_dir, img_name+'_id_feat.pt')
-        output_path_id_cross_att = os.path.join(output_path_dir, img_name+'_id_cross_att.pt')
-        output_path_spatial      = os.path.join(output_path_dir, img_name+'_spatial.pt')
-        output_path_ext_mapping  = os.path.join(output_path_dir, img_name+'_ext_mapping.pt')
-        output_path_style        = os.path.join(output_path_dir, img_name+'_style.pt')
-        print('output_path_id_feat:', output_path_id_feat)
-        torch.save(id_feat_img, output_path_id_feat)
-        print('output_path_id_cross_att:', output_path_id_cross_att)
-        torch.save(id_cross_att_img, output_path_id_cross_att)
-        print('output_path_spatial:', output_path_spatial)
-        torch.save(spatial_img, output_path_spatial)
-        print('output_path_ext_mapping:', output_path_ext_mapping)
-        torch.save(ext_mapping_img, output_path_ext_mapping)
-        print('output_path_style:', output_path_style)
-        torch.save(style_img, output_path_style)
+            img_name, img_ext = os.path.splitext(os.path.basename(path_img))
+            output_path_id_feat      = os.path.join(output_path_dir, img_name+'_id_feat.pt')
+            output_path_id_cross_att = os.path.join(output_path_dir, img_name+'_id_cross_att.pt')
+            output_path_spatial      = os.path.join(output_path_dir, img_name+'_spatial.pt')
+            output_path_ext_mapping  = os.path.join(output_path_dir, img_name+'_ext_mapping.pt')
+            output_path_style        = os.path.join(output_path_dir, img_name+'_style.pt')
+            print('output_path_id_feat:', output_path_id_feat)
+            torch.save(id_feat_img, output_path_id_feat)
+            print('output_path_id_cross_att:', output_path_id_cross_att)
+            torch.save(id_cross_att_img, output_path_id_cross_att)
+            print('output_path_spatial:', output_path_spatial)
+            torch.save(spatial_img, output_path_spatial)
+            print('output_path_ext_mapping:', output_path_ext_mapping)
+            torch.save(ext_mapping_img, output_path_ext_mapping)
+            print('output_path_style:', output_path_style)
+            torch.save(style_img, output_path_style)
 
-        elapsed_time = time.time()-start_time
-        total_elapsed_time += elapsed_time
-        avg_sample_time = total_elapsed_time / (idx_path+1)
-        estimated_time = avg_sample_time * (len(imgs_paths)-(idx_path+1))
-        print("Elapsed time: %.3fs" % elapsed_time)
-        print("Avg elapsed time: %.3fs" % avg_sample_time)
-        print("Total elapsed time: %.3fs,  %.3fm,  %.3fh" % (total_elapsed_time, total_elapsed_time/60, total_elapsed_time/3600))
-        print("Estimated Time to Completion (ETC): %.3fs,  %.3fm,  %.3fh" % (estimated_time, estimated_time/60, estimated_time/3600))
-        print('--------------')
+            elapsed_time = time.time()-start_time
+            total_elapsed_time += elapsed_time
+            avg_sample_time = total_elapsed_time / ((idx_path-args.start_idx)+1)
+            estimated_time = avg_sample_time * (len(imgs_paths)-(idx_path+1))
+            print("Elapsed time: %.3fs" % elapsed_time)
+            print("Avg elapsed time: %.3fs" % avg_sample_time)
+            print("Total elapsed time: %.3fs,  %.3fm,  %.3fh" % (total_elapsed_time, total_elapsed_time/60, total_elapsed_time/3600))
+            print("Estimated Time to Completion (ETC): %.3fs,  %.3fm,  %.3fh" % (estimated_time, estimated_time/60, estimated_time/3600))
+            print('--------------')
+
+        else:
+            print(f'Skipping indices: {idx_path}/{len(imgs_paths)}', end='\r')
+
+    print('\nFinished!')
+
 
 if __name__ == "__main__":
     main()
