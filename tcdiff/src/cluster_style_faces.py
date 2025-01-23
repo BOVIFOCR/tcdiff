@@ -7,7 +7,7 @@ import numpy as np
 import glob
 import shutil
 import pickle
-from kmeans_pytorch import kmeans
+import kmeans_pytorch
 import tsnecuda
 # from tsnecuda import TSNE
 from sklearn.manifold import TSNE
@@ -17,14 +17,16 @@ from collections import Counter
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument('--input', type=str, default='/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_STYLE_FEATURES_TINY')
+    parser.add_argument('--input', type=str, default='/datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_STYLE_FEATURES')
     parser.add_argument('--ext', type=str, default='_spatial.pt')
-    parser.add_argument('--corresponding-imgs', type=str, default='/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112', help='')
+    parser.add_argument('--corresponding-imgs', type=str, default='/datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS', help='')
     parser.add_argument('--num-imgs-clusters-to-save', type=int, default=0)
     parser.add_argument('--num-clusters', type=int, default=100)
     parser.add_argument('--distance', type=str, default='all', help='all or euclidean or cosine')
     parser.add_argument('--device', type=str, default='cuda:0', help='cuda:0 or cpu')
-    parser.add_argument('--facial-attributes', type=str, default='/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_FACE_ATTRIB', help='')
+    parser.add_argument('--facial-attributes', type=str, default='', help='')    # '/datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_FACE_ATTRIB'
+    parser.add_argument('--source-clusters', type=str, default='', help='')    # '/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_STYLE_FEATURES_CLUSTERING/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl'
+
 
     args = parser.parse_args()
     return args
@@ -81,9 +83,11 @@ def save_styles_per_race_bars_chart(ndarrays, global_title, output_path):
     ndarrays = [ndarrays[race] for race in races]
     if len(ndarrays) != len(races):
         raise ValueError("The number of ndarrays must match the number of subtitles.")
-    global_max = max([arr.max() for arr in ndarrays])
-    n_subplots = len(ndarrays)
 
+    # global_max = max([arr.max() for arr in ndarrays])
+    global_max = 0.1   # 10%
+
+    n_subplots = len(ndarrays)
     fig_height = 10
     fig, axes = plt.subplots(n_subplots, 1, figsize=(10, fig_height), constrained_layout=True)
 
@@ -129,7 +133,11 @@ def save_races_count_bar_chart(race_list, races_labels_dict, title, output_path)
 
 def main(args):
 
-    output_dir = args.input.rstrip('/') + '_CLUSTERING'
+    if not args.source_clusters:
+        output_dir = args.input.rstrip('/') + '_CLUSTERING'
+    else:
+        output_dir = args.input.rstrip('/') + '_CLUSTERING_FROM_' + '-'.join(args.source_clusters.split('/')[-6:-1])
+    
     output_dir_feature = os.path.join(output_dir, f"feature={args.ext.split('.')[0]}")
     output_dir_distance = os.path.join(output_dir_feature, f'_distance={args.distance}')
     output_dir_nclusters = os.path.join(output_dir_distance, f'nclusters={args.num_clusters}')
@@ -139,7 +147,6 @@ def main(args):
     clusters_data = {}
     path_clusters_file = os.path.join(output_dir_path, f'clusters-data_feature={args.ext}_distance={args.distance}_nclusters={args.num_clusters}.pkl')
 
-
     # SEARCH FILES AND LOAD FEATURES
     if not os.path.isfile(path_clusters_file):
         print(f'Searching files \'{args.ext}\' in \'{args.input}\'')
@@ -147,7 +154,7 @@ def main(args):
         print(f'Found {len(files_paths)} files\n------------------')
 
         clusters_data['files_paths'] = files_paths
-        print(f'Saving clusters data to disk: \'{path_clusters_file}\'')
+        print(f'Saving found file paths to disk: \'{path_clusters_file}\'')
         save_dict(clusters_data, path_clusters_file)
 
         feat = torch.load(files_paths[0])
@@ -168,7 +175,7 @@ def main(args):
         print('')
         
         clusters_data['original_feats'] = all_feats
-        print(f'Saving clusters data to disk: \'{path_clusters_file}\'')
+        print(f'Saving found file paths and loaded features to disk: \'{path_clusters_file}\'')
         save_dict(clusters_data, path_clusters_file)
     else:
         print(f'Loading saved files paths and original features: \'{path_clusters_file}\'')
@@ -180,25 +187,53 @@ def main(args):
 
 
     # CLUSTERING
-    if not 'cluster_ids' in list(clusters_data.keys()) and not 'cluster_centers' in list(clusters_data.keys()):
-        print(f'Clustering (K-Means)... num_clusters={args.num_clusters}')
-        cluster_ids_x, cluster_centers = kmeans(X=all_feats,
-                                                num_clusters=args.num_clusters,
-                                                distance=args.distance,
-                                                device=torch.device(args.device),
-                                                seed=440)
-        cluster_ids_x, cluster_centers = cluster_ids_x.cpu().numpy(), cluster_centers.cpu().numpy()
-        # print('cluster_ids_x:', cluster_ids_x)
-        print('cluster_ids_x.shape:', cluster_ids_x.shape)
+    if not args.source_clusters:
+        # CLUSTERING ITSELF
+        if not 'cluster_ids' in list(clusters_data.keys()) and not 'cluster_centers' in list(clusters_data.keys()):
+            print(f'Clustering (K-Means)... num_clusters={args.num_clusters}')
+            cluster_ids_x, cluster_centers = kmeans_pytorch.kmeans(X=all_feats,
+                                                                   num_clusters=args.num_clusters,
+                                                                   distance=args.distance,
+                                                                   device=torch.device(args.device),
+                                                                   seed=440)
+            cluster_ids_x, cluster_centers = cluster_ids_x.cpu().numpy(), cluster_centers.cpu().numpy()
+            # print('cluster_ids_x:', cluster_ids_x)
+            print('cluster_ids_x.shape:', cluster_ids_x.shape)
 
-        clusters_data['cluster_ids'] = cluster_ids_x
-        clusters_data['cluster_centers'] = cluster_centers
-        print(f'Saving clusters data to disk: \'{path_clusters_file}\'')
-        save_dict(clusters_data, path_clusters_file)
+            clusters_data['cluster_ids'] = cluster_ids_x
+            clusters_data['cluster_centers'] = cluster_centers
+            print(f'Saving clusters and predicted ids data to disk: \'{path_clusters_file}\'')
+            save_dict(clusters_data, path_clusters_file)
+        else:
+            print(f'Loading saved clusters: \'{path_clusters_file}\'')
+            cluster_ids_x   = clusters_data['cluster_ids']
+            cluster_centers = clusters_data['cluster_centers']
+        # print('cluster_ids_x.shape:', cluster_ids_x.shape, '    type(cluster_ids_x):', type(cluster_ids_x), '    cluster_ids_x.dtype:', cluster_ids_x.dtype)
+        # print('cluster_centers.shape:', cluster_centers.shape, '    type(cluster_centers):', type(cluster_centers), '    cluster_centers.dtype:', cluster_centers.dtype)
     else:
-        print(f'Loading saved clusters: \'{path_clusters_file}\'')
-        cluster_ids_x   = clusters_data['cluster_ids']
-        cluster_centers = clusters_data['cluster_centers']
+        # LABELING USING CLUSTERS FROM OTHER DATASET
+        print(f'Loading clusters from other dataset: \'{args.source_clusters}\'')
+        clusters_other_dataset = load_dict(args.source_clusters)
+        keep_keys = ['cluster_centers']
+        for keep_key in keep_keys:
+            assert keep_key in list(clusters_other_dataset.keys()), f"Key \'{keep_key}\' not found in file \'{args.source_clusters}\'"
+        for found_key in list(clusters_other_dataset.keys()):
+            if found_key != keep_key:
+                del clusters_other_dataset[found_key]
+        cluster_centers = clusters_other_dataset['cluster_centers']
+        cluster_centers = torch.from_numpy(cluster_centers)
+
+        print('Predicting samples ids from clusters...')
+        cluster_ids_x = kmeans_pytorch.kmeans_predict(X=all_feats,
+                                                      cluster_centers=cluster_centers,
+                                                      distance=args.distance,
+                                                      device=torch.device(args.device),
+                                                      gamma_for_soft_dtw=0.001,
+                                                      tqdm_flag=True)
+        clusters_data['cluster_ids'] = cluster_ids_x
+        print(f'Saving predicted ids data to disk: \'{path_clusters_file}\'')
+        save_dict(clusters_data, path_clusters_file)
+        # sys.exit(0)
 
 
     # DIMENSIONALITY REDUCTION
@@ -349,7 +384,10 @@ def main(args):
     print('Normalizing races count...')
     races_styles_clusters_count_normalized = {}
     for idx_race, race in enumerate(list(races_labels_dict.keys())):
-        races_styles_clusters_count_normalized[race] = races_styles_clusters_count[race] / races_styles_clusters_count[race].sum()
+        if races_styles_clusters_count[race].sum() > 0.0:
+            races_styles_clusters_count_normalized[race] = races_styles_clusters_count[race] / races_styles_clusters_count[race].sum()
+        else:
+            races_styles_clusters_count_normalized[race] = np.zeros_like(races_styles_clusters_count[race])
         # print(f'{race}:{races_styles_clusters_count_normalized[race]}')
 
 

@@ -48,6 +48,8 @@ def get_all_files_in_path(folder_path, file_extension=['.jpg','.jpeg','.png'], p
             for ext in file_extension:
                 if pattern in path_file and path_file.lower().endswith(ext.lower()):
                     file_list.append(path_file)
+                    print(f'Found files: {len(file_list)}', end='\r')
+    print()
     # file_list.sort()
     file_list = natural_sort(file_list)
     return file_list
