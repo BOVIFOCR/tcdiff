@@ -12,6 +12,7 @@ import tsnecuda
 # from tsnecuda import TSNE
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
+from collections import Counter
 
 
 def parse_args():
@@ -22,6 +23,7 @@ def parse_args():
     parser.add_argument('--num-imgs-clusters-to-save', type=int, default=0)
     parser.add_argument('--num-clusters', type=int, default=100)
     parser.add_argument('--distance', type=str, default='all', help='all or euclidean or cosine')
+    parser.add_argument('--device', type=str, default='cuda:0', help='cuda:0 or cpu')
     parser.add_argument('--facial-attributes', type=str, default='/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_FACE_ATTRIB', help='')
 
     args = parser.parse_args()
@@ -43,6 +45,8 @@ def get_all_files_in_path(folder_path, file_extension=['_spatial.pt'], pattern='
             for ext in file_extension:
                 if pattern in path_file and path_file.lower().endswith(ext.lower()):
                     file_list.append(path_file)
+                    print(f'{len(file_list)}', end='\r')
+    print()
     # file_list.sort()
     file_list = natural_sort(file_list)
     return file_list
@@ -72,16 +76,71 @@ def save_scatter_plot_clusters(data, labels, centers, title='', output_path=''):
     # sys.exit(0)
 
 
+def save_styles_per_race_bars_chart(ndarrays, global_title, output_path):
+    races = list(ndarrays.keys())
+    ndarrays = [ndarrays[race] for race in races]
+    if len(ndarrays) != len(races):
+        raise ValueError("The number of ndarrays must match the number of subtitles.")
+    global_max = max([arr.max() for arr in ndarrays])
+    n_subplots = len(ndarrays)
+
+    fig_height = 10
+    fig, axes = plt.subplots(n_subplots, 1, figsize=(10, fig_height), constrained_layout=True)
+
+    if n_subplots == 1:
+        axes = [axes]
+
+    fig.suptitle(global_title, fontsize=16, weight='bold')
+    for i, (ax, arr, subtitle) in enumerate(zip(axes, ndarrays, races)):
+        ax.bar(range(len(arr)), arr)
+        ax.set_ylim(0, global_max)
+        ax.set_yticks([0, global_max])
+        ax.set_title(subtitle, fontsize=14)
+        if i == len(ndarrays)-1: ax.set_xlabel("Face Styles", fontsize=12)
+        ax.set_ylabel("Percentual", fontsize=12)
+
+        ax.set_xticks(range(len(arr)))
+        ax.set_xticklabels(range(len(arr)), fontsize=8, rotation=90)
+
+    plt.savefig(output_path, format='png')
+    plt.close(fig)
+
+
+def save_races_count_bar_chart(race_list, races_labels_dict, title, output_path):
+    races_idx = np.array([races_labels_dict[race] for race in race_list])
+    counts = [sum(races_idx == race_idx) for race_idx in list(races_labels_dict.values())]
+    
+    fig, ax = plt.subplots(figsize=(5, 5))
+    ax.bar(list(races_labels_dict.keys()), counts)
+    ax.set_xlabel('Race')
+    ax.set_ylabel('Number of Samples')
+    ax.set_title(title)
+
+    ax.set_xticks(range(len(races_labels_dict)))
+    ax.set_xticklabels(list(races_labels_dict.keys()), rotation=45, ha='right')
+    
+    plt.tight_layout()
+    
+    plt.savefig(output_path, format='png')
+    plt.close(fig)
+
+
+
+
 def main(args):
 
     output_dir = args.input.rstrip('/') + '_CLUSTERING'
     output_dir_feature = os.path.join(output_dir, f"feature={args.ext.split('.')[0]}")
     output_dir_distance = os.path.join(output_dir_feature, f'_distance={args.distance}')
-    os.makedirs(output_dir_distance, exist_ok=True)
+    output_dir_nclusters = os.path.join(output_dir_distance, f'nclusters={args.num_clusters}')
+    output_dir_path = output_dir_nclusters
+    os.makedirs(output_dir_path, exist_ok=True)
 
     clusters_data = {}
-    path_clusters_file = os.path.join(output_dir_distance, f'clusters-data_feature={args.ext}_distance={args.distance}_nclusters={args.num_clusters}.pkl')
+    path_clusters_file = os.path.join(output_dir_path, f'clusters-data_feature={args.ext}_distance={args.distance}_nclusters={args.num_clusters}.pkl')
 
+
+    # SEARCH FILES AND LOAD FEATURES
     if not os.path.isfile(path_clusters_file):
         print(f'Searching files \'{args.ext}\' in \'{args.input}\'')
         files_paths = get_all_files_in_path(args.input, args.ext)
@@ -91,15 +150,14 @@ def main(args):
         print(f'Saving clusters data to disk: \'{path_clusters_file}\'')
         save_dict(clusters_data, path_clusters_file)
 
-
         feat = torch.load(files_paths[0])
         # print('feat.shape:', feat.shape, '    feat.device:', feat.device)
         feat = torch.flatten(feat, start_dim=1)
         # print('feat.shape:', feat.shape, '    feat.dtype:', feat.dtype, '    feat.device:', feat.device)
         print(f'Allocating data matrix {(len(files_paths),feat.shape[1])}...')
         all_feats = torch.zeros((len(files_paths),feat.shape[1]), dtype=torch.float, device='cuda:0')
-        print('all_feats.shape:', all_feats.shape, '    all_feats.dtype:', all_feats.dtype, '    all_feats.device:', all_feats.device)
-        print('------------------')
+        # print('all_feats.shape:', all_feats.shape, '    all_feats.dtype:', all_feats.dtype, '    all_feats.device:', all_feats.device)
+        # print('------------------')
         # sys.exit(0)
 
         for idx_feat, file_path in enumerate(files_paths):
@@ -112,21 +170,22 @@ def main(args):
         clusters_data['original_feats'] = all_feats
         print(f'Saving clusters data to disk: \'{path_clusters_file}\'')
         save_dict(clusters_data, path_clusters_file)
-
     else:
-        print(f'Loading clusters from disk: \'{path_clusters_file}\'')
+        print(f'Loading saved files paths and original features: \'{path_clusters_file}\'')
         clusters_data = load_dict(path_clusters_file)
         files_paths   = clusters_data['files_paths']
-        all_feats     = clusters_data['original_feats']
+        all_feats     = clusters_data['original_feats'].cpu()
+    print('all_feats.shape:', all_feats.shape, '    all_feats.dtype:', all_feats.dtype, '    all_feats.device:', all_feats.device)
+    print('------------------')
 
 
-
+    # CLUSTERING
     if not 'cluster_ids' in list(clusters_data.keys()) and not 'cluster_centers' in list(clusters_data.keys()):
         print(f'Clustering (K-Means)... num_clusters={args.num_clusters}')
         cluster_ids_x, cluster_centers = kmeans(X=all_feats,
                                                 num_clusters=args.num_clusters,
                                                 distance=args.distance,
-                                                device=torch.device('cuda:0'),
+                                                device=torch.device(args.device),
                                                 seed=440)
         cluster_ids_x, cluster_centers = cluster_ids_x.cpu().numpy(), cluster_centers.cpu().numpy()
         # print('cluster_ids_x:', cluster_ids_x)
@@ -136,13 +195,13 @@ def main(args):
         clusters_data['cluster_centers'] = cluster_centers
         print(f'Saving clusters data to disk: \'{path_clusters_file}\'')
         save_dict(clusters_data, path_clusters_file)
-
     else:
+        print(f'Loading saved clusters: \'{path_clusters_file}\'')
         cluster_ids_x   = clusters_data['cluster_ids']
         cluster_centers = clusters_data['cluster_centers']
 
 
-
+    # DIMENSIONALITY REDUCTION
     if not 'feats_tsne' in list(clusters_data.keys()) and not 'cluster_centers_tsne' in list(clusters_data.keys()):
         print(f'Reducing dimensionality (TSNE)...')
         # all_feats_tsne = TSNE(n_components=2, perplexity=15, learning_rate=10).fit_transform(all_feats)  # for 'from tsnecuda import TSNE'
@@ -155,46 +214,52 @@ def main(args):
         clusters_data['cluster_centers_tsne'] = cluster_centers_tsne
         print(f'Saving clusters (original and TSNE) data to disk: \'{path_clusters_file}\'')
         save_dict(clusters_data, path_clusters_file)
-
     else:
-        print(f'Loading features and clusters TSNE: \'{path_clusters_file}\'')
+        print(f'Loading saved features and clusters TSNE: \'{path_clusters_file}\'')
         all_feats_tsne       = clusters_data['feats_tsne']
         cluster_centers_tsne = clusters_data['cluster_centers_tsne']
 
     chart_title = f'Face Style Clustering (num_clusters: {args.num_clusters}, distance: {args.distance})'
-    chart_path = os.path.join(output_dir_distance, f'clustering_feature={args.ext}_distance={args.distance}_nclusters={args.num_clusters}.png')
+    chart_path = os.path.join(output_dir_path, f'clustering_feature={args.ext}_distance={args.distance}_nclusters={args.num_clusters}.png')
     print(f'Saving scatter plot of clusters: \'{chart_path}\'')
     save_scatter_plot_clusters(all_feats_tsne, cluster_ids_x, cluster_centers_tsne, chart_title, chart_path)
 
 
-
+    # SAVE IMAGES OF CLUSTERS
     if args.num_imgs_clusters_to_save > 0:
-        print(f'\nSearching corresponding images: \'{args.corresponding_imgs}\'')
-        corresp_imgs_paths = [None] * len(files_paths)
-        for idx_feat, file_path in enumerate(files_paths):
-            # print(f'{idx_feat}/{len(files_paths)}')
-            file_parent_dir = os.path.dirname(file_path)
-            file_name = os.path.basename(file_path)
+        if not 'corresp_imgs_paths' in list(clusters_data.keys()):
+            print(f'\nSearching corresponding images: \'{args.corresponding_imgs}\'')
+            corresp_imgs_paths = [None] * len(files_paths)
+            for idx_feat, file_path in enumerate(files_paths):
+                # print(f'{idx_feat}/{len(files_paths)}')
+                file_parent_dir = os.path.dirname(file_path)
+                file_name = os.path.basename(file_path)
 
-            img_parent_dir = file_parent_dir.replace(args.input, args.corresponding_imgs)
-            img_name_pattern = img_parent_dir + '/' + file_name.replace(args.ext, '') + '.*'
-            img_name_pattern = img_name_pattern.replace('[','*').replace(']','*')
-            # print('img_name_pattern:', img_name_pattern)
-            img_path = glob.glob(img_name_pattern)
-            assert len(img_path) > 0, f'\nNo file found with the pattern \'{img_name_pattern}\''
-            assert len(img_path) == 1, f'\nMore than 1 file found: \'{img_path}\''
-            img_path = img_path[0]
-            corresp_imgs_paths[idx_feat] = img_path
-            # print('img_path:', img_path)
-            print(f'{idx_feat}/{len(files_paths)} - img_path: \'{img_path}\'          ', end='\r')
-            # sys.exit(0)
-        print()
-        assert len(corresp_imgs_paths) == len(files_paths)
+                img_parent_dir = file_parent_dir.replace(args.input, args.corresponding_imgs)
+                img_name_pattern = img_parent_dir + '/' + file_name.replace(args.ext, '') + '.*'
+                img_name_pattern = img_name_pattern.replace('[','*').replace(']','*')
+                # print('img_name_pattern:', img_name_pattern)
+                img_path = glob.glob(img_name_pattern)
+                assert len(img_path) > 0, f'\nNo file found with the pattern \'{img_name_pattern}\''
+                assert len(img_path) == 1, f'\nMore than 1 file found: \'{img_path}\''
+                img_path = img_path[0]
+                corresp_imgs_paths[idx_feat] = img_path
+                # print('img_path:', img_path)
+                print(f'{idx_feat}/{len(files_paths)} - img_path: \'{img_path}\'          ', end='\r')
+                # sys.exit(0)
+            print()
+            assert len(corresp_imgs_paths) == len(files_paths)
+            clusters_data['corresp_imgs_paths'] = corresp_imgs_paths
+            print(f'Saving corresponding images paths to disk: \'{path_clusters_file}\'')
+            save_dict(clusters_data, path_clusters_file)
+        else:
+            print(f'Loading saved corresponding images paths: \'{path_clusters_file}\'')
+            corresp_imgs_paths = clusters_data['corresp_imgs_paths']
 
-        output_dir_clusters_imgs = os.path.join(output_dir_distance, f'clusters_imgs_nclusters={args.num_clusters}')
+        output_dir_clusters_imgs = os.path.join(output_dir_path, f'clusters_imgs')
         os.makedirs(output_dir_clusters_imgs, exist_ok=True)
 
-        print(f'\nCopying face images to: \'{output_dir_clusters_imgs}\'')
+        print(f'\nCopying face images of clusters to: \'{output_dir_clusters_imgs}\'')
         for id_cluster_label, (cluster_label, src_img_path) in enumerate(zip(cluster_ids_x, corresp_imgs_paths)):
             output_dir_cluster = os.path.join(output_dir_clusters_imgs, str(cluster_label))
             os.makedirs(output_dir_cluster, exist_ok=True)
@@ -209,33 +274,101 @@ def main(args):
             # sys.exit(0)
         print()
 
-    
 
-    print(f'\nSearching corresponding facial attributes: \'{args.facial_attributes}\'')
-    corresp_facial_attribs_paths = [None] * len(files_paths)
-    for idx_file, file_path in enumerate(files_paths):
-        file_parent_dir = os.path.dirname(file_path)
-        file_name = os.path.basename(file_path)
+    # SEARCH FACIAL ATTRIBUTES FILES CONTAINING ETHNIC GROUPS PREDICTED LABELS
+    if not 'facial_attribs_paths' in list(clusters_data.keys()):
+        print(f'\nSearching corresponding facial attributes: \'{args.facial_attributes}\'')
+        corresp_facial_attribs_paths = [None] * len(files_paths)
+        for idx_file, file_path in enumerate(files_paths):
+            file_parent_dir = os.path.dirname(file_path)
+            file_name = os.path.basename(file_path)
 
-        attrib_parent_dir = file_parent_dir.replace(args.input, args.facial_attributes)
-        attrib_name_pattern = attrib_parent_dir + '/' + file_name.replace(args.ext, '') + '.pkl'
-        attrib_name_pattern = attrib_name_pattern.replace('[','*').replace(']','*')
-        # print('attrib_name_pattern:', attrib_name_pattern)
-        attrib_path = glob.glob(attrib_name_pattern)
-        assert len(attrib_path) > 0, f'\nNo file found with the pattern \'{attrib_name_pattern}\''
-        assert len(attrib_path) == 1, f'\nMore than 1 file found: \'{attrib_path}\''
-        attrib_path = attrib_path[0]
-        corresp_facial_attribs_paths[idx_file] = attrib_path
-        # print('attrib_path:', attrib_path)
-        print(f'{idx_file}/{len(files_paths)} - attrib_path: \'{attrib_path}\'          ', end='\r')
-        # sys.exit(0)
+            attrib_parent_dir = file_parent_dir.replace(args.input, args.facial_attributes)
+            attrib_name_pattern = attrib_parent_dir + '/' + file_name.replace(args.ext, '') + '.pkl'
+            attrib_name_pattern = attrib_name_pattern.replace('[','*').replace(']','*')
+            # print('attrib_name_pattern:', attrib_name_pattern)
+            attrib_path = glob.glob(attrib_name_pattern)
+            assert len(attrib_path) > 0, f'\nNo file found with the pattern \'{attrib_name_pattern}\''
+            assert len(attrib_path) == 1, f'\nMore than 1 file found: \'{attrib_path}\''
+            attrib_path = attrib_path[0]
+            corresp_facial_attribs_paths[idx_file] = attrib_path
+            # print('attrib_path:', attrib_path)
+            print(f'{idx_file}/{len(files_paths)} - attrib_path: \'{attrib_path}\'          ', end='\r')
+            # sys.exit(0)
+        print()
+        assert len(corresp_facial_attribs_paths) == len(files_paths)
+        clusters_data['facial_attribs_paths'] = corresp_facial_attribs_paths
+        print(f'Saving clusters data to disk: \'{path_clusters_file}\'')
+        save_dict(clusters_data, path_clusters_file)
+    else:
+        print(f'\nLoading saved corresponding facial attributes paths: \'{path_clusters_file}\'')
+        corresp_facial_attribs_paths = clusters_data['facial_attribs_paths']
+    # sys.exit(0)
 
-        attrib = load_dict(attrib_path)
-        print("\nattrib['race']:", attrib)
-        sys.exit(0)
 
-    print()
-    assert len(corresp_facial_attribs_paths) == len(files_paths)
+    # LOAD FACIAL ATTRIBUTES CONTAINING ETHNIC GROUPS LABELS
+    if not 'facial_attribs' in list(clusters_data.keys()) and not 'dominant_races' in list(clusters_data.keys()):
+        all_facial_attribs = [None] * len(corresp_facial_attribs_paths)
+        all_dominant_races  = [None] * len(corresp_facial_attribs_paths)
+        print(f'Loading corresponding individual facial attributes')
+        for idx_file, attrib_path in enumerate(corresp_facial_attribs_paths):
+            print(f'{idx_file}/{len(corresp_facial_attribs_paths)} - attrib_path: \'{attrib_path}\'          ', end='\r')
+            facial_attribs = load_dict(attrib_path)
+            all_facial_attribs[idx_file] = facial_attribs
+            all_dominant_races[idx_file] = facial_attribs['race']['dominant_race']
+        print()
+
+        clusters_data['facial_attribs'] = all_facial_attribs
+        clusters_data['dominant_races'] = all_dominant_races
+        print(f'Saving clusters data to disk: \'{path_clusters_file}\'')
+        save_dict(clusters_data, path_clusters_file)
+    else:
+        print(f'Loading saved corresponding facial attributes: \'{path_clusters_file}\'')
+        all_facial_attribs = clusters_data['facial_attribs']
+        all_dominant_races = clusters_data['dominant_races']
+
+
+    # COUNT SAMPLES BELONGING TO EACH DISTINCT FACE STYLE (CLUSTER)
+    races_labels_dict = {"asian": 0, "indian": 1, "black": 2, "white": 3, "middle eastern": 4, "latino hispanic": 5}
+    if not 'races_styles_clusters_count' in list(clusters_data.keys()):
+        races_styles_clusters_count = {race: np.zeros((args.num_clusters,)) for race in list(races_labels_dict.keys())}
+        print(f'\nCounting face styles per race: {list(races_labels_dict.keys())}')
+        for idx_sample, (dominant_race, cluster_id) in enumerate(zip(all_dominant_races, cluster_ids_x)):
+            print(f'{idx_sample}/{len(all_dominant_races)}', end='\r')
+            races_styles_clusters_count[dominant_race][cluster_id] += 1
+        print()
+        # for idx_race, dominant_race in enumerate(list(races_styles_clusters_count.keys())):
+        #     print(f'{dominant_race}:', races_styles_clusters_count[dominant_race], f'    type: {type(races_styles_clusters_count[dominant_race])}')
+        clusters_data['races_styles_clusters_count'] = races_styles_clusters_count
+        print(f'Saving clusters data to disk: \'{path_clusters_file}\'')
+        save_dict(clusters_data, path_clusters_file)
+    else:
+        print(f'Loading saved face styles count: \'{path_clusters_file}\'')
+        races_styles_clusters_count = clusters_data['races_styles_clusters_count']
+
+    print('Normalizing races count...')
+    races_styles_clusters_count_normalized = {}
+    for idx_race, race in enumerate(list(races_labels_dict.keys())):
+        races_styles_clusters_count_normalized[race] = races_styles_clusters_count[race] / races_styles_clusters_count[race].sum()
+        # print(f'{race}:{races_styles_clusters_count_normalized[race]}')
+
+
+
+    global_title = 'Face Styles per Ethnic Group'
+    styles_per_ethnic_group_path = os.path.join(output_dir_path, 'styles_per_ethnic_group.png')
+    print(f'Saving chart of styles per race: \'{styles_per_ethnic_group_path}\'')
+    # create_bar_chart(races_styles_clusters_count, global_title, styles_per_ethnic_group_path)
+    save_styles_per_race_bars_chart(races_styles_clusters_count_normalized, global_title, styles_per_ethnic_group_path)
+
+
+
+    title = 'Races Count'
+    output_path = os.path.join(output_dir_path, 'races_count.png')
+    # print(f'len(all_dominant_races): {len(all_dominant_races)}')
+    print(f'Saving chart of races count: {output_path}')
+    save_races_count_bar_chart(all_dominant_races, races_labels_dict, title, output_path)
+
+
 
     print('\nFinished!\n')
 
