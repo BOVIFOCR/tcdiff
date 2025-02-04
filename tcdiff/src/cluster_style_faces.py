@@ -10,20 +10,21 @@ import pickle
 import kmeans_pytorch
 import tsnecuda
 # from tsnecuda import TSNE
+from scipy.stats import entropy
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
-from collections import Counter
+# from collections import Counter
 
 
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument('--input', type=str, default='/datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_STYLE_FEATURES')
-    parser.add_argument('--ext', type=str, default='_spatial.pt')
+    parser.add_argument('--ext', type=str, default='_style.pt')
     parser.add_argument('--corresponding-imgs', type=str, default='/datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS', help='')
     parser.add_argument('--num-imgs-clusters-to-save', type=int, default=0)
     parser.add_argument('--num-clusters', type=int, default=100)
-    parser.add_argument('--distance', type=str, default='all', help='all or euclidean or cosine')
-    parser.add_argument('--device', type=str, default='cuda:0', help='cuda:0 or cpu')
+    parser.add_argument('--distance', type=str, default='cosine', help='cosine or euclidean')
+    parser.add_argument('--device', type=str, default='cpu', help='cpu or cuda:0')
     parser.add_argument('--facial-attributes', type=str, default='', help='')    # '/datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_FACE_ATTRIB'
     parser.add_argument('--source-clusters', type=str, default='', help='')    # '/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_STYLE_FEATURES_CLUSTERING/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl'
 
@@ -64,6 +65,38 @@ def load_dict(path: str) -> dict:
         return pickle.load(file)
 
 
+def compute_statistical_metrics(normalized_data):
+    values_sum = np.sum(normalized_data)
+    assert values_sum == 0.0 or (values_sum >= 0.99 and values_sum <= 1.0), f'np.sum(normalized_data) is {values_sum}, should be in [0.99, 1.0]'
+    stats = {}
+
+    mean, std_dev = np.mean(normalized_data), np.std(normalized_data)
+    # stats['mean'] = mean
+    # stats['std'] = std_dev
+
+    normalized_entropy = 0.0
+    if values_sum > 0.0:
+        entropy_value = entropy(normalized_data, base=2)
+        normalized_entropy = entropy_value / np.log2(len(normalized_data))
+    stats['entropy'] = normalized_entropy
+
+    # gini_index = 1 - np.sum(normalized_data**2)
+    # stats['gini'] = gini_index
+
+    cv = 0.0
+    if std_dev > 0 and mean > 0:
+        cv = std_dev / mean
+    stats['cv'] = cv
+
+    uniform_prob = np.ones_like(normalized_data) / len(normalized_data)
+    normalized_data = normalized_data[normalized_data > 0]
+    uniform_prob = uniform_prob[:len(normalized_data)]
+    kl_div = np.sum(normalized_data * (np.log2(normalized_data) - np.log2(uniform_prob)))
+    stats['kl_div'] = kl_div
+
+    return stats
+
+
 def save_scatter_plot_clusters(data, labels, centers, title='', output_path=''):
     plt.figure(figsize=(8, 8))
     plt.scatter(data[:, 0], data[:, 1], c=labels, s=30000/len(data), cmap="viridis")
@@ -78,7 +111,8 @@ def save_scatter_plot_clusters(data, labels, centers, title='', output_path=''):
     # sys.exit(0)
 
 
-def save_styles_per_race_bars_chart(ndarrays, global_title, output_path):
+'''
+def save_styles_per_race_bars_chart(ndarrays, ndarrays_stats, global_title, output_path):
     races = list(ndarrays.keys())
     ndarrays = [ndarrays[race] for race in races]
     if len(ndarrays) != len(races):
@@ -105,6 +139,58 @@ def save_styles_per_race_bars_chart(ndarrays, global_title, output_path):
 
         ax.set_xticks(range(len(arr)))
         ax.set_xticklabels(range(len(arr)), fontsize=8, rotation=90)
+
+    plt.savefig(output_path, format='png')
+    plt.close(fig)
+'''
+def save_styles_per_race_bars_chart(ndarrays, ndarrays_stats, global_title, output_path):
+    races = list(ndarrays.keys())
+    ndarrays = [ndarrays[race] for race in races]
+    stats = [ndarrays_stats[race] for race in races]
+
+    if len(ndarrays) != len(races) or len(stats) != len(races):
+        raise ValueError("The number of ndarrays and stats must match the number of subtitles.")
+
+    # Set the global maximum value for consistent y-axis scaling
+    global_max = 0.05    # 5%
+    # global_max = 0.1   # 10%
+
+    n_subplots = len(ndarrays)
+    fig_height = 10
+    fig, axes = plt.subplots(n_subplots, 2, figsize=(16, fig_height), constrained_layout=True, 
+                              gridspec_kw={"width_ratios": [3, 1]})
+
+    if n_subplots == 1:
+        axes = [axes]
+
+    fig.suptitle(global_title, fontsize=16, weight='bold')
+
+    for i, ((bar_ax, stat_ax), arr, stat, subtitle) in enumerate(zip(axes, ndarrays, stats, races)):
+        # Plot bar chart for ndarrays
+        bar_ax.bar(range(len(arr)), arr)
+        bar_ax.set_ylim(0, global_max)
+        bar_ax.set_yticks([0, global_max])
+        bar_ax.set_title(f'{subtitle} (styles)', fontsize=14)
+        if i == len(ndarrays) - 1:
+            bar_ax.set_xlabel("Face Styles", fontsize=12)
+        bar_ax.set_ylabel("Percentual", fontsize=12)
+
+        # Set x-ticks and labels for bar_ax
+        bar_ax.set_xticks(range(len(arr)))
+        bar_ax.set_xticklabels(range(len(arr)), fontsize=8, rotation=90)
+
+        # Plot vertical bar chart for statistics
+        stat_labels = list(stat.keys())
+        stat_values = list(stat.values())
+        bars = stat_ax.bar(stat_labels, stat_values, color="orange")
+        stat_ax.set_title(f'{subtitle} (statistics)', fontsize=14)
+        stat_ax.set_ylim(0, 2)
+        stat_ax.set_ylabel("Value", fontsize=10)
+
+        # Add value annotations to the bars
+        for bar, value in zip(bars, stat_values):
+            stat_ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.05, f'{value:.3f}', 
+                         ha='center', va='bottom', fontsize=14)
 
     plt.savefig(output_path, format='png')
     plt.close(fig)
@@ -147,7 +233,7 @@ def main(args):
     clusters_data = {}
     path_clusters_file = os.path.join(output_dir_path, f'clusters-data_feature={args.ext}_distance={args.distance}_nclusters={args.num_clusters}.pkl')
 
-    # SEARCH FILES AND LOAD FEATURES
+    # SEARCH FILES
     if not os.path.isfile(path_clusters_file):
         print(f'Searching files \'{args.ext}\' in \'{args.input}\'')
         files_paths = get_all_files_in_path(args.input, args.ext)
@@ -156,7 +242,15 @@ def main(args):
         clusters_data['files_paths'] = files_paths
         print(f'Saving found file paths to disk: \'{path_clusters_file}\'')
         save_dict(clusters_data, path_clusters_file)
+    else:
+        print(f'Loading saved paths: \'{path_clusters_file}\'')
+        clusters_data = load_dict(path_clusters_file)
+        files_paths   = clusters_data['files_paths']
+        print(f'Loaded {len(files_paths)} files paths\n------------------')
 
+
+    # LOAD FEATURES
+    if not 'original_feats' in list(clusters_data.keys()):
         feat = torch.load(files_paths[0])
         # print('feat.shape:', feat.shape, '    feat.device:', feat.device)
         feat = torch.flatten(feat, start_dim=1)
@@ -175,10 +269,10 @@ def main(args):
         print('')
         
         clusters_data['original_feats'] = all_feats
-        print(f'Saving found file paths and loaded features to disk: \'{path_clusters_file}\'')
+        print(f'Saving loaded features to disk: \'{path_clusters_file}\'')
         save_dict(clusters_data, path_clusters_file)
     else:
-        print(f'Loading saved files paths and original features: \'{path_clusters_file}\'')
+        print(f'Loading saved original features: \'{path_clusters_file}\'')
         clusters_data = load_dict(path_clusters_file)
         files_paths   = clusters_data['files_paths']
         all_feats     = clusters_data['original_feats'].cpu()
@@ -296,12 +390,14 @@ def main(args):
 
         print(f'\nCopying face images of clusters to: \'{output_dir_clusters_imgs}\'')
         for id_cluster_label, (cluster_label, src_img_path) in enumerate(zip(cluster_ids_x, corresp_imgs_paths)):
+            if type(cluster_label) is torch.Tensor: cluster_label = cluster_label.item()
             output_dir_cluster = os.path.join(output_dir_clusters_imgs, str(cluster_label))
             os.makedirs(output_dir_cluster, exist_ok=True)
             print(f'{id_cluster_label}/{len(cluster_ids_x)}          ', end='\r')
             # print(f'{id_cluster_label}/{len(cluster_ids_x)} - \'{output_dir_cluster}\'          ', end='\r')
             
-            dst_img_path = os.path.join(output_dir_cluster, os.path.basename(src_img_path))
+            # dst_img_path = os.path.join(output_dir_cluster, os.path.basename(src_img_path))
+            dst_img_path = os.path.join(output_dir_cluster, src_img_path.split('/')[-2]+'_'+os.path.basename(src_img_path))
             shutil.copy(src_img_path, dst_img_path)
             # os.symlink(src_img_path, dst_img_path)
 
@@ -392,11 +488,22 @@ def main(args):
 
 
 
+    print('Computing distributions statiscs...')
+    races_styles_clusters_count_stats = {}
+    for idx_race, race in enumerate(list(races_labels_dict.keys())):
+        races_styles_clusters_count_stats[race] = compute_statistical_metrics(races_styles_clusters_count_normalized[race])
+        print(f'{race}: {races_styles_clusters_count_stats[race]}')
+
+
+
     global_title = 'Face Styles per Ethnic Group'
     styles_per_ethnic_group_path = os.path.join(output_dir_path, 'styles_per_ethnic_group.png')
     print(f'Saving chart of styles per race: \'{styles_per_ethnic_group_path}\'')
     # create_bar_chart(races_styles_clusters_count, global_title, styles_per_ethnic_group_path)
-    save_styles_per_race_bars_chart(races_styles_clusters_count_normalized, global_title, styles_per_ethnic_group_path)
+    save_styles_per_race_bars_chart(races_styles_clusters_count_normalized,
+                                    races_styles_clusters_count_stats,
+                                    global_title,
+                                    styles_per_ethnic_group_path)
 
 
 
