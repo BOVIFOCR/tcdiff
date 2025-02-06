@@ -1,5 +1,10 @@
 # duo
 # export CUDA_VISIBLE_DEVICES=1; python synthesis_stylize_idImgs_with_styImgs_equalize_styles_clusters.py --ckpt_path /home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/experiments_WITH_BFM_CONSISTENCY_CONSTRAINTS/dcface/e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1/checkpoints/epoch_008.ckpt --save_root /datasets2/bjgbiesseck/face_recognition/dcface/generated_images/tcdiff_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1_EQUALIZED-STYLES_NCLUSTERS=100 --file_map_id_sty_imgs /datasets2/bjgbiesseck/face_recognition/synthetic/dcface_with_pretrained_models/dcface_original_synthetic_ids/dcface_original_10000_synthetic_ids_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/face_pairs_subj_style.json --batch_size 49
+# export CUDA_VISIBLE_DEVICES=1; python synthesis_stylize_idImgs_with_styImgs_equalize_styles_clusters.py --ckpt_path /home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/experiments_WITH_BFM_CONSISTENCY_CONSTRAINTS/dcface/e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1/checkpoints/epoch_008.ckpt --save_root /datasets2/bjgbiesseck/face_recognition/dcface/generated_images/tcdiff_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1_EQUALIZED-STYLES_NCLUSTERS=100 --file_map_id_sty_imgs /datasets2/bjgbiesseck/face_recognition/synthetic/dcface_with_pretrained_models/dcface_original_synthetic_ids/dcface_original_10000_synthetic_ids_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/face_pairs_subj_style.json --id_images_root /datasets2/bjgbiesseck/face_recognition/synthetic/dcface_with_pretrained_models/dcface_original_synthetic_ids --style_images_root /datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace --batch_size 49
+
+# diolkos
+# export CUDA_VISIBLE_DEVICES=0; python synthesis_stylize_idImgs_with_styImgs_equalize_styles_clusters.py --ckpt_path /home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/experiments_WITH_BFM_CONSISTENCY_CONSTRAINTS/dcface/e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1/checkpoints/epoch_008.ckpt --save_root /nobackup/unico/datasets/face_recognition/dcface/generated_images/tcdiff_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1_EQUALIZED-STYLES_NCLUSTERS=100 --file_map_id_sty_imgs /nobackup/unico/datasets/face_recognition/synthetic/dcface_with_pretrained_models/dcface_original_synthetic_ids/dcface_original_10000_synthetic_ids_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/face_pairs_subj_style.json --id_images_root /nobackup/unico/datasets/face_recognition/synthetic/dcface_with_pretrained_models/dcface_original_synthetic_ids --style_images_root /nobackup/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace --batch_size 49
+
 
 import pandas as pd
 import pyrootutils
@@ -48,6 +53,22 @@ def adjust_paths_idImgs_styImgs(dict_map_idImgs_styImgs, id_imgs_paths, sty_imgs
     pass
 
 
+# path1       = '/datasets/dataset_name/0/0.jpg'
+# path2       = '/home/user/images/dataset_name'
+# path_prefix = '/datasets/dataset_name'
+def find_path_prefix(path1='', path2=''):
+    path1_items = path1.split('/')
+    path2_items = path2.split('/')
+    if path2_items[-1] in path1_items:
+        found_index = path1_items.index(path2_items[-1])
+        path_prefix = '/'.join(path1_items[:found_index+1])
+    else:
+        path_prefix = '/'.join(path1_items[:-2])
+    return path_prefix
+
+
+
+
 def main():
 
     parser = ArgumentParser()
@@ -64,8 +85,8 @@ def main():
     parser.add_argument('--seed', type=int, default=123)
     parser.add_argument('--num_workers', type=int, default=0)
     
-    parser.add_argument('--id_images_root', default='sample_images/id_images/2377.jpg')
-    parser.add_argument('--style_images_root', type=str, default='sample_images/style_images/combined')
+    parser.add_argument('--id_images_root', type=str, default='')      # sample_images/id_images/2377.jpg  or  sample_images/id_images
+    parser.add_argument('--style_images_root', type=str, default='')   # sample_images/style_images/combined
     
     parser.add_argument('--style_sampling_method', type=str, default='mapping', choices=['mapping'])
     parser.add_argument('--use_writer', action='store_true')
@@ -78,8 +99,8 @@ def main():
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    args.id_images_root = os.path.join(root, args.id_images_root)
-    args.style_images_root = os.path.join(root, args.style_images_root)
+    # args.id_images_root = os.path.join(root, args.id_images_root)
+    # args.style_images_root = os.path.join(root, args.style_images_root)
 
     print(f'\nLoading checkpoint: \'{args.ckpt_path}\'')
     ckpt = torch.load(os.path.join(root, args.ckpt_path))
@@ -108,15 +129,26 @@ def main():
 
     print(f"\nLoading id and style face pairs mapping: '{args.file_map_id_sty_imgs}'")
     all_face_pairs_subj_style = load_from_json(args.file_map_id_sty_imgs)
-
+    
     id_images = []
     style_images = []
     for idx_key, key in enumerate(list(all_face_pairs_subj_style.keys())):
         id_images.append(key)
         style_images.extend(all_face_pairs_subj_style[key])
-
     num_subject = len(id_images)
     num_image_per_subject = len(all_face_pairs_subj_style[id_images[0]])
+
+    if args.id_images_root != '':
+        id_images_path_prefix = find_path_prefix(id_images[0], args.id_images_root)
+        print('id_images_path_prefix:', id_images_path_prefix)
+        for idx_id_image_path, id_image_path in enumerate(id_images):
+            id_images[idx_id_image_path] = id_image_path.replace(id_images_path_prefix, args.id_images_root)
+
+    if args.style_images_root != '':
+        style_images_path_prefix = find_path_prefix(style_images[0], args.style_images_root)
+        print('style_images_path_prefix:', style_images_path_prefix)
+        for idx_style_image_path, style_image_path in enumerate(style_images):
+            style_images[idx_style_image_path] = style_image_path.replace(style_images_path_prefix, args.style_images_root)
 
     id_dataset = ListDatasetWithIndex(id_images, flip_color=True)
     style_dataset = ListDatasetWithIndex(style_images, flip_color=True)
