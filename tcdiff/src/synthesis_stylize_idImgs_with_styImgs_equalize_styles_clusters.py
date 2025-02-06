@@ -174,6 +174,7 @@ def main():
         writer = Writer(args.save_root)
     else:
         writer = None
+    print()
 
     dataset_generate(pl_module, style_dataset, id_dataset,
                      num_image_per_subject=num_image_per_subject, num_subject=num_subject,

@@ -119,7 +119,7 @@ def batched_label_name_list(batch_size, num_subject, num_image_per_subject, num_
 
 
 def style_image_sampler(style_sampling_method, num_image_per_subject, id_index_splits, names_splits, id_dataset,
-                        style_dataset, pl_module, idx_splits=None):
+                        style_dataset, pl_module, idx_splits=None, batch_size=16, num_partition=1, partition_idx=0):
     if 'feature_sim' in style_sampling_method:
         sim_df_path = 'sub_projects/make_similarity_list/make_similarity_list/center_ir_101_adaface_webface4m_faces_webface_112x112.pth'
         sim_df_dict = torch.load(os.path.join(pl_module.hparams.paths.repo_root, sim_df_path))['similarity_df']
@@ -194,20 +194,11 @@ def style_image_sampler(style_sampling_method, num_image_per_subject, id_index_s
         style_index_splits = idx_splits
 
     elif style_sampling_method == 'mapping':
-        global_index = 0
-        style_index_splits = []
-        for id_index_split, names_split in zip(id_index_splits, names_splits):
-            batch_size = len(id_index_split)
-
-            # style_index_split = [np.random.randint(0, len(style_dataset), 1)[0] for i in range(batch_size)]
-            style_index_split = []
-            for i in range(batch_size):
-                style_index_split.append(global_index)
-                global_index += 1
-
-            style_index_splits.append(torch.tensor(style_index_split))
-        # print('style_index_splits:', style_index_splits)
-
+        style_indexes = torch.tensor(list(range(len(style_dataset))))
+        if num_partition > 1:
+            style_indexes = np.array_split(style_indexes, num_partition)[partition_idx]
+        style_index_splits = torch.split(style_indexes, batch_size)
+        
     else:
         raise ValueError('not correct style sampling meth')
 
@@ -221,16 +212,14 @@ def dataset_generate(pl_module, style_dataset, id_dataset, num_image_per_subject
     os.makedirs(save_root, exist_ok=True)
     print(save_root)
 
-
     labels_splits, names_splits = batched_label_name_list(batch_size, num_subject,
                                                           num_image_per_subject, num_partition, partition_idx)
 
-
     id_index_splits = labels_splits  # label name becomes index to sample id image from id_dataset
 
-
     style_index_splits = style_image_sampler(style_sampling_method, num_image_per_subject, id_index_splits,
-                                             names_splits, id_dataset, style_dataset, pl_module)
+                                             names_splits, id_dataset, style_dataset, pl_module, None,
+                                             batch_size, num_partition, partition_idx)
 
     datagen_dataset = StyleIdDataset(labels_splits, names_splits,
                                      style_index_splits, id_index_splits,
