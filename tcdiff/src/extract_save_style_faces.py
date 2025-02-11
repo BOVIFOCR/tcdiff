@@ -114,7 +114,7 @@ def get_face_style_embedding(args, pl_module, img_normalized):
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument('--ckpt_path', type=str, default='model.ckpt')
+    parser.add_argument('--ckpt_path', type=str, default='model.ckpt')   # /home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/experiments_WITH_BFM_CONSISTENCY_CONSTRAINTS/dcface/e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1/checkpoints/epoch_008.ckpt
     parser.add_argument('--seed', type=int, default=123)
     parser.add_argument('--imgs', type=str, default='/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112')
     parser.add_argument('--start-idx', type=int, default=0)
