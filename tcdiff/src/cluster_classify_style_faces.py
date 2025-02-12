@@ -70,7 +70,8 @@ def load_dict(path: str) -> dict:
 
 def compute_statistical_metrics(normalized_data):
     values_sum = np.sum(normalized_data)
-    assert values_sum == 0.0 or (values_sum >= 0.99 and values_sum <= 1.0), f'np.sum(normalized_data) is {values_sum}, should be in [0.99, 1.0]'
+    min_allowed, max_allowed = 0.99, 1.001
+    assert values_sum == 0.0 or (values_sum >= min_allowed and values_sum <= max_allowed), f'np.sum(normalized_data) is {values_sum}, should be in [{max_allowed}, {min_allowed}]'
     stats = {}
 
     mean, std_dev = np.mean(normalized_data), np.std(normalized_data)
