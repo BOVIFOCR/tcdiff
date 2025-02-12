@@ -1,3 +1,6 @@
+# duo
+# export CUDA_VISIBLE_DEVICES=1; python make_face_pairs_dataset_id_style.py --subj-clusters /datasets2/bjgbiesseck/face_recognition/synthetic/dcface_with_pretrained_models/dcface_original_synthetic_ids/dcface_original_10000_synthetic_ids_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl --subj-ext .png --num-samples-per-id 49 --style-clusters /datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_STYLE_FEATURES_CLUSTERING/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl --style-ext .png --num-clusters 100
+
 import os, sys
 from argparse import ArgumentParser
 import re
@@ -89,6 +92,29 @@ def make_dict_of_clusters_labels(clusters_data):
     return cluster_ids_dict_idx, cluster_ids_dict_paths
 
 
+def make_dict_of_clusters_labels_by_ethnic_groups(clusters_data):
+    cluster_ids        = clusters_data['cluster_ids']
+    corresp_imgs_paths = clusters_data['corresp_imgs_paths']
+    dominant_races     = clusters_data['dominant_races']
+
+    cluster_ids_races_dict_idx = {}
+    cluster_ids_races_dict_paths = {}
+    for idx, (race, label) in enumerate(zip(dominant_races, cluster_ids)):
+        if not race in cluster_ids_races_dict_idx:
+            cluster_ids_races_dict_idx[race]   = {}
+            cluster_ids_races_dict_paths[race] = {}
+
+        label = int(label)
+        if not label in cluster_ids_races_dict_idx[race]:
+            cluster_ids_races_dict_idx[race][label]   = []
+            cluster_ids_races_dict_paths[race][label] = []
+        
+        cluster_ids_races_dict_idx[race][label].append(idx)
+        cluster_ids_races_dict_paths[race][label].append(corresp_imgs_paths[idx])
+
+    return cluster_ids_races_dict_idx, cluster_ids_races_dict_paths
+
+
 def find_lowest_indices(lst, M):
     # return np.argsort(lst)[:M].tolist()
     return np.argsort(lst)[:M]
@@ -108,6 +134,21 @@ def select_style_samples_from_lowest_clusters(subj_indices_lowest_styles, style_
     return all_selected_style_samples
 
 
+def select_style_samples_from_lowest_clusters_by_race(subj_indices_lowest_styles, subj_dominant_race, style_dict_paths_cluster_ids, num_samples_per_cluster=1):
+    all_selected_style_samples = {}
+    for idx_cluster, cluster in enumerate(subj_indices_lowest_styles):
+        # print(f"{idx_cluster} - cluster: {cluster} - {style_dict_paths_cluster_ids[cluster]}")
+        # sys.exit(0)
+        selected_style_samples_one_cluster = random.sample(style_dict_paths_cluster_ids[subj_dominant_race][cluster], num_samples_per_cluster)
+        assert not cluster in all_selected_style_samples, f"Error, cluster key '{cluster}' already in 'all_selected_style_samples'" 
+        all_selected_style_samples[cluster] = selected_style_samples_one_cluster
+    
+    assert len(all_selected_style_samples) == len(subj_indices_lowest_styles), \
+        f"Error, len(all_selected_style_samples) ({len(all_selected_style_samples)}) != len(subj_indices_lowest_styles) ({len(subj_indices_lowest_styles)})"
+    return all_selected_style_samples
+
+
+
 
 def main(args):
     print('--------------')
@@ -119,7 +160,8 @@ def main(args):
         subj_clusters_data['races_styles_clusters_count'][race] = np.array(subj_clusters_data['races_styles_clusters_count'][race])
 
     print('\nMaking dict of subj clusters labels...')
-    subj_dict_idx_cluster_ids, subj_dict_paths_cluster_ids = make_dict_of_clusters_labels(subj_clusters_data)
+    # subj_dict_idx_cluster_ids, subj_dict_paths_cluster_ids = make_dict_of_clusters_labels(subj_clusters_data)
+    subj_dict_idx_cluster_ids, subj_dict_paths_cluster_ids = make_dict_of_clusters_labels_by_ethnic_groups(subj_clusters_data)
     subj_clusters_data['dict_idx_cluster_ids']   = subj_dict_idx_cluster_ids
     subj_clusters_data['dict_paths_cluster_ids'] = subj_dict_paths_cluster_ids
     # print("id_clusters_data['cluster_ids_dict_paths']:", id_clusters_data['cluster_ids_dict_paths'])
@@ -135,7 +177,8 @@ def main(args):
         style_clusters_data['races_styles_clusters_count'][race] = np.array(style_clusters_data['races_styles_clusters_count'][race])
 
     print('\nMaking dict of style clusters labels...')
-    style_dict_idx_cluster_ids, style_dict_paths_cluster_ids = make_dict_of_clusters_labels(style_clusters_data)
+    # style_dict_idx_cluster_ids, style_dict_paths_cluster_ids = make_dict_of_clusters_labels(style_clusters_data)
+    style_dict_idx_cluster_ids, style_dict_paths_cluster_ids = make_dict_of_clusters_labels_by_ethnic_groups(style_clusters_data)
     style_clusters_data['dict_idx_cluster_ids']   = style_dict_idx_cluster_ids
     style_clusters_data['dict_paths_cluster_ids'] = style_dict_paths_cluster_ids
     print('Done')
@@ -152,7 +195,8 @@ def main(args):
         subj_indices_lowest_styles = find_lowest_indices(subj_race_styles_clusters_count, args.num_samples_per_id)
         # print('subj_indices_lowest_styles:', subj_indices_lowest_styles, '    type:', type(subj_indices_lowest_styles))
 
-        style_selected_samples_paths = select_style_samples_from_lowest_clusters(subj_indices_lowest_styles, style_dict_paths_cluster_ids)
+        # style_selected_samples_paths = select_style_samples_from_lowest_clusters(subj_indices_lowest_styles, style_dict_paths_cluster_ids)
+        style_selected_samples_paths = select_style_samples_from_lowest_clusters_by_race(subj_indices_lowest_styles, subj_dominant_race, style_dict_paths_cluster_ids)
         # print('style_selected_samples_paths:', style_selected_samples_paths)
 
         print(f"Selected style images: {len(list(style_selected_samples_paths.keys()))}")
@@ -171,7 +215,8 @@ def main(args):
 
     # print("subj_clusters_data['races_styles_clusters_count']:", subj_clusters_data['races_styles_clusters_count'])
 
-    face_pairs_file_path = os.path.join(os.path.dirname(args.subj_clusters), 'face_pairs_subj_style.json')
+    # face_pairs_file_path = os.path.join(os.path.dirname(args.subj_clusters), 'face_pairs_subj_style.json')
+    face_pairs_file_path = os.path.join(os.path.dirname(args.subj_clusters), 'face_pairs_subj_style_by_race.json')
     print(f"Saving face pairs to disk: {face_pairs_file_path}")
     save_dict_to_json(all_face_pairs_subj_style, face_pairs_file_path, indent=4)
 
