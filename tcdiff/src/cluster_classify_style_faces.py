@@ -1,3 +1,4 @@
+## duo
 # duo
 # export CUDA_VISIBLE_DEVICES=1; python cluster_classify_style_faces.py --input /datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_STYLE_FEATURES --ext _style.pt --corresponding-imgs /datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112 --num-imgs-clusters-to-save 10 --num-clusters 100 --distance cosine --device cpu --facial-attributes /datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_FACE_ATTRIB
 # export CUDA_VISIBLE_DEVICES=1; python cluster_classify_style_faces.py --input /datasets2/bjgbiesseck/face_recognition/dcface/generated_images/tcdiff_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1_EQUALIZED-STYLES_NCLUSTERS=100_STYLE_FEATURES --ext _style.pt --corresponding-imgs /datasets2/bjgbiesseck/face_recognition/dcface/generated_images/tcdiff_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1_EQUALIZED-STYLES_NCLUSTERS=100 --num-imgs-clusters-to-save 10 --num-clusters 100 --distance cosine --device cpu --facial-attributes /datasets2/bjgbiesseck/face_recognition/dcface/generated_images/tcdiff_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1_EQUALIZED-STYLES_NCLUSTERS=100_FACE_ATTRIB --source-clusters /datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_STYLE_FEATURES_CLUSTERING/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl
@@ -115,38 +116,6 @@ def save_scatter_plot_clusters(data, labels, centers, title='', output_path=''):
     # sys.exit(0)
 
 
-'''
-def save_styles_per_race_bars_chart(ndarrays, ndarrays_stats, global_title, output_path):
-    races = list(ndarrays.keys())
-    ndarrays = [ndarrays[race] for race in races]
-    if len(ndarrays) != len(races):
-        raise ValueError("The number of ndarrays must match the number of subtitles.")
-
-    # global_max = max([arr.max() for arr in ndarrays])
-    global_max = 0.1   # 10%
-
-    n_subplots = len(ndarrays)
-    fig_height = 10
-    fig, axes = plt.subplots(n_subplots, 1, figsize=(10, fig_height), constrained_layout=True)
-
-    if n_subplots == 1:
-        axes = [axes]
-
-    fig.suptitle(global_title, fontsize=16, weight='bold')
-    for i, (ax, arr, subtitle) in enumerate(zip(axes, ndarrays, races)):
-        ax.bar(range(len(arr)), arr)
-        ax.set_ylim(0, global_max)
-        ax.set_yticks([0, global_max])
-        ax.set_title(subtitle, fontsize=14)
-        if i == len(ndarrays)-1: ax.set_xlabel("Face Styles", fontsize=12)
-        ax.set_ylabel("Percentual", fontsize=12)
-
-        ax.set_xticks(range(len(arr)))
-        ax.set_xticklabels(range(len(arr)), fontsize=8, rotation=90)
-
-    plt.savefig(output_path, format='png')
-    plt.close(fig)
-'''
 def save_styles_per_race_bars_chart(ndarrays, ndarrays_stats, global_title, output_path):
     races = list(ndarrays.keys())
     ndarrays = [ndarrays[race] for race in races]
