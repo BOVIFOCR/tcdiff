@@ -125,8 +125,9 @@ def save_styles_per_race_bars_chart(ndarrays, ndarrays_stats, global_title, outp
         raise ValueError("The number of ndarrays and stats must match the number of subtitles.")
 
     # Set the global maximum value for consistent y-axis scaling
-    global_max = 0.05    # 5%
+    # global_max = 0.05  # 5%
     # global_max = 0.1   # 10%
+    global_max = 1/len(ndarrays[0]) * 5
 
     n_subplots = len(ndarrays)
     fig_height = 10
@@ -228,8 +229,8 @@ def main(args):
         # print('feat.shape:', feat.shape, '    feat.device:', feat.device)
         feat = torch.flatten(feat, start_dim=1)
         # print('feat.shape:', feat.shape, '    feat.dtype:', feat.dtype, '    feat.device:', feat.device)
-        print(f'Allocating data matrix {(len(files_paths),feat.shape[1])}...')
-        all_feats = torch.zeros((len(files_paths),feat.shape[1]), dtype=torch.float, device='cuda:0')
+        print(f"Allocating data matrix {(len(files_paths),feat.shape[1])}, device={torch.device('cpu')}...")
+        all_feats = torch.zeros((len(files_paths),feat.shape[1]), dtype=torch.float, device=torch.device('cpu'))
         # print('all_feats.shape:', all_feats.shape, '    all_feats.dtype:', all_feats.dtype, '    all_feats.device:', all_feats.device)
         # print('------------------')
         # sys.exit(0)
