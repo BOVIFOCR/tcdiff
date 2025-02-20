@@ -130,7 +130,7 @@ def save_styles_per_race_bars_chart(ndarrays, ndarrays_stats, global_title, outp
     global_max = 1/len(ndarrays[0]) * 5
 
     n_subplots = len(ndarrays)
-    fig_height = 10
+    fig_height = 12
     fig, axes = plt.subplots(n_subplots, 2, figsize=(16, fig_height), constrained_layout=True, 
                               gridspec_kw={"width_ratios": [3, 1]})
 
@@ -437,7 +437,7 @@ def main(args):
     races_labels_dict = {"asian": 0, "indian": 1, "black": 2, "white": 3, "middle eastern": 4, "latino hispanic": 5}
     if not 'races_styles_clusters_count' in list(clusters_data.keys()):
         races_styles_clusters_count = {race: np.zeros((args.num_clusters,)) for race in list(races_labels_dict.keys())}
-        print(f'\nCounting face styles per race: {list(races_labels_dict.keys())}')
+        print(f'\nCounting face styles per race: {list(races_styles_clusters_count.keys())}')
         for idx_sample, (dominant_race, cluster_id) in enumerate(zip(all_dominant_races, cluster_ids_x)):
             print(f'{idx_sample}/{len(all_dominant_races)}', end='\r')
             races_styles_clusters_count[dominant_race][cluster_id] += 1
@@ -451,9 +451,18 @@ def main(args):
         print(f'Loading saved face styles count: \'{path_clusters_file}\'')
         races_styles_clusters_count = clusters_data['races_styles_clusters_count']
 
+    if not 'total_races' in list(races_styles_clusters_count.keys()):
+        print(f'\nCounting total face styles...')
+        races_styles_clusters_count_total_races = np.zeros((args.num_clusters,))
+        for idx_race, race in enumerate(list(races_styles_clusters_count.keys())):
+            races_styles_clusters_count_total_races += races_styles_clusters_count[race]
+        races_styles_clusters_count['total_races'] = races_styles_clusters_count_total_races
+        print('races_styles_clusters_count_total_races.sum():', races_styles_clusters_count_total_races.sum())
+        # sys.exit(0)
+
     print('Normalizing races count...')
     races_styles_clusters_count_normalized = {}
-    for idx_race, race in enumerate(list(races_labels_dict.keys())):
+    for idx_race, race in enumerate(list(races_styles_clusters_count.keys())):
         if races_styles_clusters_count[race].sum() > 0.0:
             races_styles_clusters_count_normalized[race] = races_styles_clusters_count[race] / races_styles_clusters_count[race].sum()
         else:
@@ -464,7 +473,7 @@ def main(args):
 
     print('Computing distributions statiscs...')
     races_styles_clusters_count_stats = {}
-    for idx_race, race in enumerate(list(races_labels_dict.keys())):
+    for idx_race, race in enumerate(list(races_styles_clusters_count.keys())):
         races_styles_clusters_count_stats[race] = compute_statistical_metrics(races_styles_clusters_count_normalized[race])
         print(f'{race}: {races_styles_clusters_count_stats[race]}')
 
