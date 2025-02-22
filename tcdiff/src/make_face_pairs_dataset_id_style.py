@@ -12,15 +12,16 @@ import json
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument('--subj-clusters',         type=str, default='/datasets2/bjgbiesseck/face_recognition/synthetic/dcface_with_pretrained_models/dcface_original_synthetic_ids/dcface_original_10000_synthetic_ids_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl', help='')
-    # parser.add_argument('--id-clusters-imgs',    type=str, default='/datasets2/bjgbiesseck/face_recognition/synthetic/dcface_with_pretrained_models/dcface_original_synthetic_ids/dcface_original_10000_synthetic_ids_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/clusters_imgs')
-    parser.add_argument('--subj-ext',              type=str, default='.png')
-    parser.add_argument('--num-samples-per-id',  type=int, default=49)
-    parser.add_argument('--style-clusters',      type=str, default='/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_STYLE_FEATURES_CLUSTERING/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl', help='')
-    # parser.add_argument('--style-clusters-imgs', type=str, default='/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_STYLE_FEATURES_CLUSTERING/feature=_style/_distance=cosine/nclusters=100/clusters_imgs')
-    parser.add_argument('--style-ext',           type=str, default='.png')
-    parser.add_argument('--num-clusters',        type=int, default=100)
-    parser.add_argument('--output-dir',          type=str, default='')
+    parser.add_argument('--subj-clusters',           type=str, default='/datasets2/bjgbiesseck/face_recognition/synthetic/dcface_with_pretrained_models/dcface_original_synthetic_ids/dcface_original_10000_synthetic_ids_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl', help='')
+    # parser.add_argument('--id-clusters-imgs',      type=str, default='/datasets2/bjgbiesseck/face_recognition/synthetic/dcface_with_pretrained_models/dcface_original_synthetic_ids/dcface_original_10000_synthetic_ids_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/clusters_imgs')
+    parser.add_argument('--subj-ext',                type=str, default='.png')
+    parser.add_argument('--num-samples-per-id',      type=int, default=49)
+    parser.add_argument('--num-samples-per-cluster', type=int, default=1)
+    parser.add_argument('--style-clusters',          type=str, default='/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_STYLE_FEATURES_CLUSTERING/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl', help='')
+    # parser.add_argument('--style-clusters-imgs',   type=str, default='/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_STYLE_FEATURES_CLUSTERING/feature=_style/_distance=cosine/nclusters=100/clusters_imgs')
+    parser.add_argument('--style-ext',               type=str, default='.png')
+    parser.add_argument('--num-clusters',            type=int, default=100)
+    parser.add_argument('--output-dir',              type=str, default='')
 
     # parser.add_argument('--input', type=str, default='/datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_STYLE_FEATURES')
     # parser.add_argument('--ext', type=str, default='_style.pt')
@@ -139,7 +140,8 @@ def select_style_samples_from_lowest_clusters_by_race(subj_indices_lowest_styles
     for idx_cluster, cluster in enumerate(subj_indices_lowest_styles):
         # print(f"{idx_cluster} - cluster: {cluster} - {style_dict_paths_cluster_ids[cluster]}")
         # sys.exit(0)
-        selected_style_samples_one_cluster = random.sample(style_dict_paths_cluster_ids[subj_dominant_race][cluster], num_samples_per_cluster)
+        num_samples_to_select = np.minimum(num_samples_per_cluster, len(style_dict_paths_cluster_ids[subj_dominant_race][cluster]))
+        selected_style_samples_one_cluster = random.sample(style_dict_paths_cluster_ids[subj_dominant_race][cluster], num_samples_to_select)
         assert not cluster in all_selected_style_samples, f"Error, cluster key '{cluster}' already in 'all_selected_style_samples'" 
         all_selected_style_samples[cluster] = selected_style_samples_one_cluster
     
@@ -196,7 +198,7 @@ def main(args):
         # print('subj_indices_lowest_styles:', subj_indices_lowest_styles, '    type:', type(subj_indices_lowest_styles))
 
         # style_selected_samples_paths = select_style_samples_from_lowest_clusters(subj_indices_lowest_styles, style_dict_paths_cluster_ids)
-        style_selected_samples_paths = select_style_samples_from_lowest_clusters_by_race(subj_indices_lowest_styles, subj_dominant_race, style_dict_paths_cluster_ids)
+        style_selected_samples_paths = select_style_samples_from_lowest_clusters_by_race(subj_indices_lowest_styles, subj_dominant_race, style_dict_paths_cluster_ids, args.num_samples_per_cluster)
         # print('style_selected_samples_paths:', style_selected_samples_paths)
 
         print(f"Selected style images: {len(list(style_selected_samples_paths.keys()))}")
@@ -216,7 +218,7 @@ def main(args):
     # print("subj_clusters_data['races_styles_clusters_count']:", subj_clusters_data['races_styles_clusters_count'])
 
     # face_pairs_file_path = os.path.join(os.path.dirname(args.subj_clusters), 'face_pairs_subj_style.json')
-    face_pairs_file_path = os.path.join(os.path.dirname(args.subj_clusters), 'face_pairs_subj_style_by_race.json')
+    face_pairs_file_path = os.path.join(os.path.dirname(args.subj_clusters), f'face-pairs-subj-style-by-race_num-samples-per-id={args.num_samples_per_id}_num-samples-per-cluster={args.num_samples_per_cluster}.json')
     print(f"Saving face pairs to disk: {face_pairs_file_path}")
     save_dict_to_json(all_face_pairs_subj_style, face_pairs_file_path, indent=4)
 
