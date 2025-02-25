@@ -50,9 +50,9 @@ class StyleIdDataset(Dataset):
         self.style_dataset = style_dataset
         self.id_dataset = id_dataset
 
-        assert len(self.labels_splits) == len(self.names_splits)
-        assert len(self.labels_splits) == len(self.style_index_splits)
-        assert len(self.labels_splits) == len(self.id_index_splits)
+        assert len(self.labels_splits) == len(self.names_splits)      , f"len(self.labels_splits) ({len(self.labels_splits)}) != len(self.names_splits) ({len(self.names_splits)}). Should be equal."
+        assert len(self.labels_splits) == len(self.style_index_splits), f"len(self.labels_splits) ({len(self.labels_splits)}) != len(self.style_index_splits) ({len(self.style_index_splits)}). Should be equal."
+        assert len(self.labels_splits) == len(self.id_index_splits)   , f"len(self.labels_splits) ({len(self.labels_splits)}) != len(self.id_index_splits) ({len(self.id_index_splits)}). Should be equal."
 
 
     def __len__(self):
