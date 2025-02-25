@@ -142,6 +142,12 @@ def select_style_samples_from_lowest_clusters_by_race(subj_indices_lowest_styles
         # sys.exit(0)
         num_samples_to_select = np.minimum(num_samples_per_cluster, len(style_dict_paths_cluster_ids[subj_dominant_race][cluster]))
         selected_style_samples_one_cluster = random.sample(style_dict_paths_cluster_ids[subj_dominant_race][cluster], num_samples_to_select)
+
+        if len(selected_style_samples_one_cluster) < num_samples_per_cluster:
+            num_samples_to_select = num_samples_per_cluster - len(selected_style_samples_one_cluster)
+            repeated_style_samples = random.choices(style_dict_paths_cluster_ids[subj_dominant_race][cluster], k=num_samples_to_select)
+            selected_style_samples_one_cluster.extend(repeated_style_samples)
+
         assert not cluster in all_selected_style_samples, f"Error, cluster key '{cluster}' already in 'all_selected_style_samples'" 
         all_selected_style_samples[cluster] = selected_style_samples_one_cluster
     
