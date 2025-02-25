@@ -162,7 +162,9 @@ def main():
         id_name = os.path.basename(args.id_images_root).split('.')[0]
         style_dir_name = os.path.basename(args.style_images_root)
         args.save_root = os.path.join(root, 'generated_images', runname_name, f'id:{id_name}/sty:{args.style_sampling_method}_{style_dir_name}')
-        os.makedirs(args.save_root, exist_ok=True)
+        # os.makedirs(args.save_root, exist_ok=True)
+
+    args.save_root += f"_part={args.partition_idx}-{args.num_partition}"
 
     print('saving at {}'.format(args.save_root))
     if args.use_writer:
