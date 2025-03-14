@@ -305,6 +305,11 @@ def main(args):
             print(f'{idx_orig_subj_path} - copying \'{orig_subj_path}\' to \'{output_sample_path}\'')
             os.makedirs(os.path.dirname(output_sample_path), exist_ok=True)
             shutil.copy(orig_subj_path, output_sample_path)
+            orig_feat_path = os.path.join(args.corresp_style_features, orig_subj_path.split('/')[-2], '0_id_image_style.pt')
+            output_feat_path = orig_feat_path.replace(args.corresp_style_features, args.output_feat_dir)
+            print(f'{idx_orig_subj_path} - copying \'{orig_feat_path}\' to \'{output_feat_path}\'')
+            os.makedirs(os.path.dirname(output_feat_path), exist_ok=True)
+            shutil.copy(orig_feat_path, output_feat_path)
 
             orig_styles_paths = all_face_pairs_subj_style[orig_subj_path]
             # subj_all_orig_style_ids = np.zeros(args.num_samples_per_subj*num_samples_per_selected_cluster, dtype=int)
