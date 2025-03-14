@@ -13,6 +13,7 @@ import torch
 from scipy.stats import entropy
 import matplotlib.pyplot as plt
 import time
+import shutil
 import kmeans_pytorch
 
 
@@ -27,6 +28,8 @@ def parse_args():
     parser.add_argument('--num-samples-per-subj', type=int, default=49, help='')
     parser.add_argument('--num-samples-per-cluster', type=int, default=20, help='')
 
+    parser.add_argument('--output-img-dir', type=str, default='')   # example '/datasets3/bjgbiesseck/face_recognition/dcface/generated_images/tcdiff_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1_EQUALIZED-STYLES_BY-RACE_NCLUSTERS=100_ALLOW-STYLE-REPEAT_part=0-4_SELECTED-SAMPLES'
+    parser.add_argument('--output-feat-dir', type=str, default='')  # example '/datasets3/bjgbiesseck/face_recognition/dcface/generated_images/tcdiff_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1_EQUALIZED-STYLES_BY-RACE_NCLUSTERS=100_ALLOW-STYLE-REPEAT_part=0-4_SELECTED-SAMPLES_STYLE_FEATURES'
     parser.add_argument('--start-subj', type=str, default='')   # example '0'
 
     args = parser.parse_args()
@@ -287,13 +290,23 @@ def main(args):
     total_num_subj_having_all_styles_hit = 0
     total_elapsed_time = 0.0
 
+    if not args.output_img_dir:
+        args.output_img_dir = args.stylized_imgs + '_SELECTED-SAMPLES'
+    os.makedirs(args.output_img_dir, exist_ok=True)
+    if not args.output_feat_dir:
+        args.output_feat_dir = args.output_img_dir + '_STYLE_FEATURES'
+    os.makedirs(args.output_feat_dir, exist_ok=True)
+
     for idx_orig_subj_path, orig_subj_path in enumerate(all_face_pairs_subj_style.keys()):
         if idx_orig_subj_path >= starting_index_subj:
             start_time = time.time()
 
-            print(f'{idx_orig_subj_path} orig_subj_path: {orig_subj_path}')
+            output_sample_path = os.path.join(args.output_img_dir, orig_subj_path.split('/')[-2], '0_id_image.jpg')
+            print(f'{idx_orig_subj_path} - copying \'{orig_subj_path}\' to \'{output_sample_path}\'')
+            os.makedirs(os.path.dirname(output_sample_path), exist_ok=True)
+            shutil.copy(orig_subj_path, output_sample_path)
+
             orig_styles_paths = all_face_pairs_subj_style[orig_subj_path]
-            
             # subj_all_orig_style_ids = np.zeros(args.num_samples_per_subj*num_samples_per_selected_cluster, dtype=int)
             subj_all_orig_style_ids = torch.zeros(args.num_samples_per_subj*num_samples_per_selected_cluster, dtype=int, device=torch.device('cuda:0'))
             for idx_orig_style_path, orig_style_path in enumerate(orig_styles_paths):
@@ -301,21 +314,28 @@ def main(args):
                 orig_style_cluster = style_clusters_data['cluster_ids'][index_style_sample]
                 subj_all_orig_style_ids[idx_orig_style_path] = orig_style_cluster
                 # print('orig_style_path:', orig_style_path, '    orig_style_cluster:', orig_style_cluster)
-            
+
             subj_name = orig_subj_path.split('/')[-2]
             stylized_sample_index = 0
+            subj_generated_stylized_imgs_paths = []
+            subj_generated_stylized_features_paths = []
             subj_samples_feats = torch.zeros((args.num_samples_per_subj*num_samples_per_selected_cluster,128), dtype=torch.float, device=torch.device('cuda:0'))
             for idx_orig_style_path, orig_style_path in enumerate(orig_styles_paths):
                 generated_stylized_img_name = f'{stylized_sample_index}.jpg'
                 generated_stylized_feature_name = f'{stylized_sample_index}_style.pt'
+
+                generated_stylized_img_path = os.path.join(args.stylized_imgs, subj_name, generated_stylized_img_name)
                 generated_stylized_feature_path = os.path.join(args.corresp_style_features, subj_name, generated_stylized_feature_name)
+                subj_generated_stylized_imgs_paths.append(generated_stylized_img_path)
+                subj_generated_stylized_features_paths.append(generated_stylized_feature_path)
+
                 generated_stylized_feature = torch.load(generated_stylized_feature_path)
                 generated_stylized_feature = torch.flatten(generated_stylized_feature, start_dim=1)
                 subj_samples_feats[idx_orig_style_path,:] = generated_stylized_feature
                 # print(f'idx_orig_style_path: {idx_orig_style_path}', '    generated_stylized_feature.shape:', generated_stylized_feature.shape)
                 stylized_sample_index += 1
                 # sys.exit(0)
-            
+
             # print('Predicting samples ids from clusters...')
             generated_stylized_ids = kmeans_pytorch.kmeans_predict(X=subj_samples_feats,
                                                             cluster_centers=cluster_centers,
@@ -337,6 +357,25 @@ def main(args):
                 # print('subj_all_orig_style_ids[idx_begin:idx_end]:', subj_all_orig_style_ids[idx_begin:idx_end])
                 # print('generated_stylized_ids[idx_begin:idx_end]:', generated_stylized_ids[idx_begin:idx_end])
                 style_ids_comparison = torch.eq(subj_all_orig_style_ids[idx_begin:idx_end], generated_stylized_ids[idx_begin:idx_end])
+
+                indexes_hits_stylized_ids = torch.where(style_ids_comparison == True)[0]
+                if len(indexes_hits_stylized_ids) == 0:
+                    indexes_hits_stylized_ids = torch.arange(len(style_ids_comparison))
+                indexes_hits_stylized_ids += idx_begin
+
+                index_select_keep_sample = indexes_hits_stylized_ids[random.randint(0,len(indexes_hits_stylized_ids)-1)]
+                src_sample_img_path = subj_generated_stylized_imgs_paths[index_select_keep_sample]
+                src_sample_feat_path = subj_generated_stylized_features_paths[index_select_keep_sample]
+
+                tgt_sample_img_path = src_sample_img_path.replace(args.stylized_imgs, args.output_img_dir)
+                tgt_sample_feat_path = src_sample_feat_path.replace(args.corresp_style_features, args.output_feat_dir)
+
+                os.makedirs(os.path.dirname(tgt_sample_img_path), exist_ok=True)
+                os.makedirs(os.path.dirname(tgt_sample_feat_path), exist_ok=True)
+
+                shutil.copy(src_sample_img_path, os.path.dirname(tgt_sample_img_path))
+                shutil.copy(src_sample_feat_path, os.path.dirname(tgt_sample_feat_path))
+
                 subj_num_hits = torch.sum(style_ids_comparison)
                 if subj_num_hits > 0:
                     num_styles_at_least_one_hit += 1
