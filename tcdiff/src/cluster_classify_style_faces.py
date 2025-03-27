@@ -34,6 +34,8 @@ def parse_args():
     parser.add_argument('--facial-attributes', type=str, default='', help='')    # '/datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_FACE_ATTRIB'
     parser.add_argument('--source-clusters', type=str, default='', help='')      # '/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_STYLE_FEATURES_CLUSTERING/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl'
 
+    parser.add_argument('--uniform-selection', type=float, default=1.0)
+
     args = parser.parse_args()
     return args
 
@@ -208,6 +210,7 @@ def main(args):
     clusters_data = {}
     path_clusters_file = os.path.join(output_dir_path, f'clusters-data_feature={args.ext}_distance={args.distance}_nclusters={args.num_clusters}.pkl')
 
+
     # SEARCH FILES
     if not os.path.isfile(path_clusters_file):
         print(f'Searching files \'{args.ext}\' in \'{args.input}\'')
@@ -253,6 +256,38 @@ def main(args):
         all_feats     = clusters_data['original_feats'].cpu()
     print('all_feats.shape:', all_feats.shape, '    all_feats.dtype:', all_feats.dtype, '    all_feats.device:', all_feats.device)
     print('------------------')
+
+
+    # RANDOM SELECTION
+    if args.uniform_selection < 1.0:
+        output_dir_path = os.path.join(output_dir_path, f'subsampl={args.uniform_selection}')
+        os.makedirs(output_dir_path, exist_ok=True)
+
+        name_clusters_file, ext_clusters_file = os.path.splitext(os.path.basename(path_clusters_file))
+        fullname_subsampl_clusters_file = name_clusters_file + f'_subsampl={args.uniform_selection}' + ext_clusters_file
+        path_clusters_file = os.path.join(output_dir_path, fullname_subsampl_clusters_file)
+
+        if not os.path.isfile(path_clusters_file):
+            rng = np.random.RandomState(440)
+            indexes_used_samples = rng.choice(len(files_paths), round(len(files_paths)*args.uniform_selection), replace=False)
+            print(f'    Randomly selecting samples {len(indexes_used_samples)}...')
+            files_paths = [files_paths[idx] for idx in indexes_used_samples]
+            all_feats   = all_feats[indexes_used_samples,:]
+
+            clusters_data['files_paths']          = files_paths
+            clusters_data['original_feats']       = all_feats
+            clusters_data['indexes_used_samples'] = indexes_used_samples
+            print(f'    Saving randomly selected file paths to disk: \'{path_clusters_file}\'')
+            save_dict(clusters_data, path_clusters_file)
+        else:
+            print(f'    Loading randomly selected saved paths: \'{path_clusters_file}\'')
+            clusters_data = load_dict(path_clusters_file)
+            indexes_used_samples = clusters_data['indexes_used_samples']
+            files_paths          = clusters_data['files_paths']
+            all_feats            = clusters_data['original_feats'].cpu()
+            print(f'    Loaded {len(files_paths)} files paths')
+        print('    all_feats.shape:', all_feats.shape, '    all_feats.dtype:', all_feats.dtype, '    all_feats.device:', all_feats.device)
+        print('------------------')
 
 
     # CLUSTERING
