@@ -133,7 +133,7 @@ def save_styles_per_race_bars_chart(ndarrays, ndarrays_stats, global_title, outp
     global_max = 1/len(ndarrays[0]) * 5
 
     n_subplots = len(ndarrays)
-    fig_height = 12
+    fig_height = 0.5 + (len(races) * 1.7)
     fig, axes = plt.subplots(n_subplots, 2, figsize=(16, fig_height), constrained_layout=True, 
                               gridspec_kw={"width_ratios": [3, 1]})
 
