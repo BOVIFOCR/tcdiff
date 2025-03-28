@@ -211,6 +211,7 @@ def main(args):
     path_clusters_file = os.path.join(output_dir_path, f'clusters-data_feature={args.ext}_distance={args.distance}_nclusters={args.num_clusters}.pkl')
 
 
+
     # SEARCH FILES
     if not os.path.isfile(path_clusters_file):
         print(f'Searching files \'{args.ext}\' in \'{args.input}\'')
@@ -225,6 +226,7 @@ def main(args):
         clusters_data = load_dict(path_clusters_file)
         files_paths   = clusters_data['files_paths']
         print(f'Loaded {len(files_paths)} files paths\n------------------')
+
 
 
     # LOAD FEATURES
@@ -258,6 +260,7 @@ def main(args):
     print('------------------')
 
 
+
     # RANDOM SELECTION
     if args.uniform_selection < 1.0:
         output_dir_path = os.path.join(output_dir_path, f'subsampl={args.uniform_selection}')
@@ -288,6 +291,7 @@ def main(args):
             print(f'    Loaded {len(files_paths)} files paths')
         print('    all_feats.shape:', all_feats.shape, '    all_feats.dtype:', all_feats.dtype, '    all_feats.device:', all_feats.device)
         print('------------------')
+
 
 
     # CLUSTERING
@@ -340,6 +344,7 @@ def main(args):
         # sys.exit(0)
 
 
+
     # DIMENSIONALITY REDUCTION
     if not 'feats_tsne' in list(clusters_data.keys()) and not 'cluster_centers_tsne' in list(clusters_data.keys()):
         print(f'Reducing dimensionality (TSNE)...')
@@ -362,6 +367,7 @@ def main(args):
     chart_path = os.path.join(output_dir_path, f'clustering_feature={args.ext}_distance={args.distance}_nclusters={args.num_clusters}.png')
     print(f'Saving scatter plot of clusters: \'{chart_path}\'')
     save_scatter_plot_clusters(all_feats_tsne, cluster_ids_x, cluster_centers_tsne, chart_title, chart_path)
+
 
 
     # SAVE IMAGES OF CLUSTERS
@@ -416,85 +422,111 @@ def main(args):
         print()
 
 
-    # SEARCH FACIAL ATTRIBUTES FILES CONTAINING ETHNIC GROUPS PREDICTED LABELS
-    if not 'facial_attribs_paths' in list(clusters_data.keys()):
-        print(f'\nSearching corresponding facial attributes: \'{args.facial_attributes}\'')
-        corresp_facial_attribs_paths = [None] * len(files_paths)
-        for idx_file, file_path in enumerate(files_paths):
-            file_parent_dir = os.path.dirname(file_path)
-            file_name = os.path.basename(file_path)
 
-            attrib_parent_dir = file_parent_dir.replace(args.input, args.facial_attributes)
-            attrib_name_pattern = attrib_parent_dir + '/' + file_name.replace(args.ext, '') + '.pkl'
-            attrib_name_pattern = attrib_name_pattern.replace('[','*').replace(']','*')
-            # print('attrib_name_pattern:', attrib_name_pattern)
-            attrib_path = glob.glob(attrib_name_pattern)
-            assert len(attrib_path) > 0, f'\nNo file found with the pattern \'{attrib_name_pattern}\''
-            assert len(attrib_path) == 1, f'\nMore than 1 file found: \'{attrib_path}\''
-            attrib_path = attrib_path[0]
-            corresp_facial_attribs_paths[idx_file] = attrib_path
-            # print('attrib_path:', attrib_path)
-            print(f'{idx_file}/{len(files_paths)} - attrib_path: \'{attrib_path}\'          ', end='\r')
-            # sys.exit(0)
-        print()
-        assert len(corresp_facial_attribs_paths) == len(files_paths)
-        clusters_data['facial_attribs_paths'] = corresp_facial_attribs_paths
-        print(f'Saving clusters data to disk: \'{path_clusters_file}\'')
-        save_dict(clusters_data, path_clusters_file)
+    # SEARCH FACIAL ATTRIBUTES FILES CONTAINING ETHNIC GROUPS PREDICTED LABELS
+    corresp_facial_attribs_paths = None
+    if not 'facial_attribs_paths' in list(clusters_data.keys()):
+        if args.facial_attributes:
+            print(f'\nSearching corresponding facial attributes: \'{args.facial_attributes}\'')
+            corresp_facial_attribs_paths = [None] * len(files_paths)
+            for idx_file, file_path in enumerate(files_paths):
+                file_parent_dir = os.path.dirname(file_path)
+                file_name = os.path.basename(file_path)
+
+                attrib_parent_dir = file_parent_dir.replace(args.input, args.facial_attributes)
+                attrib_name_pattern = attrib_parent_dir + '/' + file_name.replace(args.ext, '') + '.pkl'
+                attrib_name_pattern = attrib_name_pattern.replace('[','*').replace(']','*')
+                # print('attrib_name_pattern:', attrib_name_pattern)
+                attrib_path = glob.glob(attrib_name_pattern)
+                assert len(attrib_path) > 0, f'\nNo file found with the pattern \'{attrib_name_pattern}\''
+                assert len(attrib_path) == 1, f'\nMore than 1 file found: \'{attrib_path}\''
+                attrib_path = attrib_path[0]
+                corresp_facial_attribs_paths[idx_file] = attrib_path
+                # print('attrib_path:', attrib_path)
+                print(f'{idx_file}/{len(files_paths)} - attrib_path: \'{attrib_path}\'          ', end='\r')
+                # sys.exit(0)
+            print()
+            assert len(corresp_facial_attribs_paths) == len(files_paths)
+            clusters_data['facial_attribs_paths'] = corresp_facial_attribs_paths
+            print(f'Saving clusters data to disk: \'{path_clusters_file}\'')
+            save_dict(clusters_data, path_clusters_file)
     else:
         print(f'\nLoading saved corresponding facial attributes paths: \'{path_clusters_file}\'')
         corresp_facial_attribs_paths = clusters_data['facial_attribs_paths']
     # sys.exit(0)
 
 
-    # LOAD FACIAL ATTRIBUTES CONTAINING ETHNIC GROUPS LABELS
-    if not 'facial_attribs' in list(clusters_data.keys()) and not 'dominant_races' in list(clusters_data.keys()):
-        all_facial_attribs = [None] * len(corresp_facial_attribs_paths)
-        all_dominant_races  = [None] * len(corresp_facial_attribs_paths)
-        print(f'Loading corresponding individual facial attributes')
-        for idx_file, attrib_path in enumerate(corresp_facial_attribs_paths):
-            print(f'{idx_file}/{len(corresp_facial_attribs_paths)} - attrib_path: \'{attrib_path}\'          ', end='\r')
-            facial_attribs = load_dict(attrib_path)
-            all_facial_attribs[idx_file] = facial_attribs
-            all_dominant_races[idx_file] = facial_attribs['race']['dominant_race']
-        print()
 
-        clusters_data['facial_attribs'] = all_facial_attribs
-        clusters_data['dominant_races'] = all_dominant_races
-        print(f'Saving clusters data to disk: \'{path_clusters_file}\'')
-        save_dict(clusters_data, path_clusters_file)
-    else:
-        print(f'Loading saved corresponding facial attributes: \'{path_clusters_file}\'')
-        all_facial_attribs = clusters_data['facial_attribs']
-        all_dominant_races = clusters_data['dominant_races']
+    # LOAD FACIAL ATTRIBUTES CONTAINING ETHNIC GROUPS LABELS
+    all_facial_attribs, all_dominant_races = None, None
+    if not corresp_facial_attribs_paths is None:
+        if not 'facial_attribs' in list(clusters_data.keys()) and not 'dominant_races' in list(clusters_data.keys()):
+            all_facial_attribs = [None] * len(corresp_facial_attribs_paths)
+            all_dominant_races  = [None] * len(corresp_facial_attribs_paths)
+            print(f'Loading corresponding individual facial attributes')
+            for idx_file, attrib_path in enumerate(corresp_facial_attribs_paths):
+                print(f'{idx_file}/{len(corresp_facial_attribs_paths)} - attrib_path: \'{attrib_path}\'          ', end='\r')
+                facial_attribs = load_dict(attrib_path)
+                all_facial_attribs[idx_file] = facial_attribs
+                all_dominant_races[idx_file] = facial_attribs['race']['dominant_race']
+            print()
+
+            clusters_data['facial_attribs'] = all_facial_attribs
+            clusters_data['dominant_races'] = all_dominant_races
+            print(f'Saving clusters data to disk: \'{path_clusters_file}\'')
+            save_dict(clusters_data, path_clusters_file)
+        else:
+            print(f'Loading saved corresponding facial attributes: \'{path_clusters_file}\'')
+            all_facial_attribs = clusters_data['facial_attribs']
+            all_dominant_races = clusters_data['dominant_races']
+
+        title = 'Races Count'
+        output_path = os.path.join(output_dir_path, 'races_count.png')
+        # print(f'len(all_dominant_races): {len(all_dominant_races)}')
+        print(f'Saving chart of races count: {output_path}')
+        save_races_count_bar_chart(all_dominant_races, races_labels_dict, title, output_path)
+
 
 
     # COUNT SAMPLES BELONGING TO EACH DISTINCT FACE STYLE (CLUSTER)
-    races_labels_dict = {"asian": 0, "indian": 1, "black": 2, "white": 3, "middle eastern": 4, "latino hispanic": 5}
-    if not 'races_styles_clusters_count' in list(clusters_data.keys()):
+    if not all_dominant_races is None:
+        races_labels_dict = {"asian": 0, "indian": 1, "black": 2, "white": 3, "middle eastern": 4, "latino hispanic": 5}
+        if not 'races_styles_clusters_count' in list(clusters_data.keys()):
+            races_styles_clusters_count = {race: np.zeros((args.num_clusters,)) for race in list(races_labels_dict.keys())}
+            print(f'\nCounting face styles per race: {list(races_styles_clusters_count.keys())}')
+            for idx_sample, (dominant_race, cluster_id) in enumerate(zip(all_dominant_races, cluster_ids_x)):
+                print(f'{idx_sample}/{len(all_dominant_races)}', end='\r')
+                races_styles_clusters_count[dominant_race][cluster_id] += 1
+            print()
+            # for idx_race, dominant_race in enumerate(list(races_styles_clusters_count.keys())):
+            #     print(f'{dominant_race}:', races_styles_clusters_count[dominant_race], f'    type: {type(races_styles_clusters_count[dominant_race])}')
+            clusters_data['races_styles_clusters_count'] = races_styles_clusters_count
+            print(f'Saving clusters data to disk: \'{path_clusters_file}\'')
+            save_dict(clusters_data, path_clusters_file)
+        else:
+            print(f'Loading saved face styles count: \'{path_clusters_file}\'')
+            races_styles_clusters_count = clusters_data['races_styles_clusters_count']
+
+        if not 'total_races' in list(races_styles_clusters_count.keys()):
+            print(f'\nCounting total face styles...')
+            races_styles_clusters_count_total_races = np.zeros((args.num_clusters,))
+            for idx_race, race in enumerate(list(races_styles_clusters_count.keys())):
+                races_styles_clusters_count_total_races += races_styles_clusters_count[race]
+            races_styles_clusters_count['total_races'] = races_styles_clusters_count_total_races
+            print('races_styles_clusters_count_total_races.sum():', races_styles_clusters_count_total_races.sum())
+            # sys.exit(0)
+    else:
+        races_labels_dict = {"total_races": 6}
         races_styles_clusters_count = {race: np.zeros((args.num_clusters,)) for race in list(races_labels_dict.keys())}
         print(f'\nCounting face styles per race: {list(races_styles_clusters_count.keys())}')
-        for idx_sample, (dominant_race, cluster_id) in enumerate(zip(all_dominant_races, cluster_ids_x)):
-            print(f'{idx_sample}/{len(all_dominant_races)}', end='\r')
-            races_styles_clusters_count[dominant_race][cluster_id] += 1
+        for idx_sample, cluster_id in enumerate(cluster_ids_x):
+            print(f'{idx_sample}/{len(cluster_ids_x)}', end='\r')
+            races_styles_clusters_count['total_races'][cluster_id] += 1
         print()
-        # for idx_race, dominant_race in enumerate(list(races_styles_clusters_count.keys())):
-        #     print(f'{dominant_race}:', races_styles_clusters_count[dominant_race], f'    type: {type(races_styles_clusters_count[dominant_race])}')
         clusters_data['races_styles_clusters_count'] = races_styles_clusters_count
         print(f'Saving clusters data to disk: \'{path_clusters_file}\'')
         save_dict(clusters_data, path_clusters_file)
-    else:
-        print(f'Loading saved face styles count: \'{path_clusters_file}\'')
-        races_styles_clusters_count = clusters_data['races_styles_clusters_count']
 
-    if not 'total_races' in list(races_styles_clusters_count.keys()):
-        print(f'\nCounting total face styles...')
-        races_styles_clusters_count_total_races = np.zeros((args.num_clusters,))
-        for idx_race, race in enumerate(list(races_styles_clusters_count.keys())):
-            races_styles_clusters_count_total_races += races_styles_clusters_count[race]
-        races_styles_clusters_count['total_races'] = races_styles_clusters_count_total_races
-        print('races_styles_clusters_count_total_races.sum():', races_styles_clusters_count_total_races.sum())
-        # sys.exit(0)
 
     print('Normalizing races count...')
     races_styles_clusters_count_normalized = {}
@@ -523,14 +555,6 @@ def main(args):
                                     races_styles_clusters_count_stats,
                                     global_title,
                                     styles_per_ethnic_group_path)
-
-
-
-    title = 'Races Count'
-    output_path = os.path.join(output_dir_path, 'races_count.png')
-    # print(f'len(all_dominant_races): {len(all_dominant_races)}')
-    print(f'Saving chart of races count: {output_path}')
-    save_races_count_bar_chart(all_dominant_races, races_labels_dict, title, output_path)
 
 
 
