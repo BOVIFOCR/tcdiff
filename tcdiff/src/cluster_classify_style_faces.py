@@ -458,6 +458,7 @@ def main(args):
 
 
     # LOAD FACIAL ATTRIBUTES CONTAINING ETHNIC GROUPS LABELS
+    races_labels_dict = {"asian": 0, "indian": 1, "black": 2, "white": 3, "middle eastern": 4, "latino hispanic": 5}
     all_facial_attribs, all_dominant_races = None, None
     if not corresp_facial_attribs_paths is None:
         if not 'facial_attribs' in list(clusters_data.keys()) and not 'dominant_races' in list(clusters_data.keys()):
@@ -490,7 +491,6 @@ def main(args):
 
     # COUNT SAMPLES BELONGING TO EACH DISTINCT FACE STYLE (CLUSTER)
     if not all_dominant_races is None:
-        races_labels_dict = {"asian": 0, "indian": 1, "black": 2, "white": 3, "middle eastern": 4, "latino hispanic": 5}
         if not 'races_styles_clusters_count' in list(clusters_data.keys()):
             races_styles_clusters_count = {race: np.zeros((args.num_clusters,)) for race in list(races_labels_dict.keys())}
             print(f'\nCounting face styles per race: {list(races_styles_clusters_count.keys())}')
