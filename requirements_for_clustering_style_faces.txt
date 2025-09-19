@@ -73,7 +73,8 @@ iniconfig==2.0.0
 insightface==0.6.2
 iopath==0.1.9
 joblib==1.2.0
-keras==2.11.0
+# keras==2.11.0
+keras==3.11.3
 kiwisolver==1.2.0
 kmeans-pytorch==0.3
 libclang==15.0.6.1
