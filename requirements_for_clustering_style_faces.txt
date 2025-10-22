@@ -57,7 +57,7 @@ google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 graphviz==0.8.4
 greenlet==3.0.3
-grpcio==1.47.0
+grpcio==1.53.2
 h5py==3.8.0
 huggingface-hub==0.22.2
 humanfriendly==10.0
