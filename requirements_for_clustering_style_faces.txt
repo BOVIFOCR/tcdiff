@@ -105,7 +105,7 @@ omegaconf==2.3.0
 onnx==1.17.0
 onnxruntime==1.11.0
 onnxruntime-gpu==1.13.1
-opencv-python==4.7.0.68
+opencv-python==4.8.1.78
 opencv-python-headless==4.8.1.78
 opt-einsum==3.3.0
 optuna==2.10.1
