@@ -197,5 +197,5 @@ wheel==0.38.1
 wrapt==1.15.0
 yacs==0.1.8
 yarl==1.8.2
-zipp==3.8.0
+zipp==3.19.1
 zstandard==0.21.0
