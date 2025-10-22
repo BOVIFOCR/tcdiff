@@ -148,7 +148,7 @@ PyYAML==6.0
 pyzmq==25.0.0
 qudida==0.0.4
 regex==2024.5.15
-requests==2.27.1
+requests==2.32.4
 requests-oauthlib==1.3.1
 rich==13.7.1
 rsa==4.8
