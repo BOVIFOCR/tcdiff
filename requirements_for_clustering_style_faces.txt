@@ -29,7 +29,7 @@ colorlog==6.8.2
 conda-package-handling==2.2.0
 conda_package_streaming==0.9.0
 contourpy==1.0.7
-cryptography==36.0.0
+cryptography==44.0.1
 cycler==0.10.0
 Cython==0.29.28
 cytoolz==0.11.0
