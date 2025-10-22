@@ -181,7 +181,7 @@ torch==1.11.0
 torchaudio==0.11.0
 torchmetrics==0.9.3
 torchvision==0.12.0
-tornado==6.1
+tornado==6.5
 tqdm==4.63.1
 trimesh==3.12.7
 tsnecuda==3.0.1+cu112
