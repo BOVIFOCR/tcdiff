@@ -193,7 +193,7 @@ virtualenv==20.26.2
 wandb==0.17.0
 wcwidth==0.2.13
 Werkzeug==1.0.1
-wheel==0.37.1
+wheel==0.38.1
 wrapt==1.15.0
 yacs==0.1.8
 yarl==1.8.2
