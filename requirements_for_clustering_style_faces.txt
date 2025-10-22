@@ -120,7 +120,7 @@ pluggy==1.5.0
 portalocker==2.4.0
 pre-commit==3.5.0
 prettytable==3.3.0
-protobuf==3.19.4
+protobuf==4.25.8
 provider==0.1.0
 psbody-mesh==0.4
 psutil==5.9.8
