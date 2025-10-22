@@ -100,7 +100,7 @@ nodeenv==1.8.0
 numba==0.57.1
 numexpr==2.8.5
 numpy==1.24.2
-oauthlib==3.2.0
+oauthlib==3.2.2
 omegaconf==2.3.0
 onnx==1.17.0
 onnxruntime==1.11.0
